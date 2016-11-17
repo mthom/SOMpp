@@ -1,11 +1,32 @@
 language: c++
+sudo: false
 
+os:
+  - linux
+  - osx
+  
+# https://docs.travis-ci.com/user/caching/
+cache: ccache
+
+addons:
+  apt:
+    sources:
+       - ubuntu-toolchain-r-test
+    packages:
+       - libnuma-dev
+       - bison
+       - gcc-4.8
+       - g++-4.8
+       - clang-3.4
+       - libclang-3.4-dev
+       - llvm-3.4
+       - libcppunit-dev
+   
 # attempt to install GCC 4.8 when necessary, otherwise we wont have C++11 support
 before_install:
-  - sudo add-apt-repository ppa:ubuntu-toolchain-r/test -y
-  - sudo apt-get update -qq
-  - if [ "$CXX" = "g++" ]; then sudo apt-get install -qq g++-4.8; export CXX=g++-4.8; fi
-  - sudo apt-get install -qq libcppunit-dev
+  - if [ "$CXX" = "g++" ]; then export CXX=g++-4.8; fi
+  - if [ "$CC" = "gcc" ]; then export CC=gcc-4.8; fi
+  - if [ "$TRAVIS_OS_NAME" = "osx" ]; then brew update; brew install cppunit; fi
 
 compiler:
   - clang
@@ -24,7 +45,27 @@ env:
   - USE_TAGGING=false  GC_TYPE=mark_sweep   CACHE_INTEGER=false
   - USE_TAGGING=false  GC_TYPE=copying      CACHE_INTEGER=false
   
-
+matrix:
+  exclude:
+    - os: osx
+      env: USE_TAGGING=true   GC_TYPE=generational
+    - os: osx
+      env: USE_TAGGING=true   GC_TYPE=copying
+    - os: osx
+      env: USE_TAGGING=false  GC_TYPE=generational CACHE_INTEGER=true
+    - os: osx
+      env: USE_TAGGING=false  GC_TYPE=mark_sweep   CACHE_INTEGER=true
+    - os: osx
+      env: USE_TAGGING=false  GC_TYPE=copying      CACHE_INTEGER=true
+    - os: osx
+      env: USE_TAGGING=false  GC_TYPE=generational CACHE_INTEGER=false
+    - os: osx
+      env: USE_TAGGING=false  GC_TYPE=mark_sweep   CACHE_INTEGER=false
+    - os: osx
+      env: USE_TAGGING=false  GC_TYPE=copying      CACHE_INTEGER=false
+    - os: osx
+      compiler: gcc
+  
 
 script:
     - make test
