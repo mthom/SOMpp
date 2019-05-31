@@ -51,7 +51,7 @@
 #include <dlfcn.h>
 #include <errno.h>
 
-#include "Jit.hpp"
+//#include "Jit.hpp"
 #include "ilgen/BytecodeBuilder.hpp"
 #include "ilgen/MethodBuilder.hpp"
 #include "ilgen/TypeDictionary.hpp"
@@ -98,7 +98,7 @@ printInt64Hex(int64_t value)
 	fprintf(stderr, "%lx", value);
 }
 
-SOMppMethod::SOMppMethod(TR::TypeDictionary *types, VMMethod *vmMethod, bool inlineCalls) :
+SOMppMethod::SOMppMethod(OMR::JitBuilder::TypeDictionary *types, VMMethod *vmMethod, bool inlineCalls) :
 		MethodBuilder(types),
 		method(vmMethod),
 		doInlining(inlineCalls),
@@ -161,7 +161,7 @@ SOMppMethod::defineLocals()
 }
 
 void
-SOMppMethod::defineStructures(TR::TypeDictionary *types)
+SOMppMethod::defineStructures(OMR::JitBuilder::TypeDictionary *types)
 {
 	pInt64 = types->PointerTo(Int64);
 	pDouble = types->PointerTo(Double);
@@ -193,7 +193,7 @@ SOMppMethod::defineFunctions()
 }
 
 void
-SOMppMethod::defineVMFrameStructure(TR::TypeDictionary *types)
+SOMppMethod::defineVMFrameStructure(OMR::JitBuilder::TypeDictionary *types)
 {
 	vmFrame = types->DefineStruct("VMFrame");
 
@@ -217,7 +217,7 @@ SOMppMethod::defineVMFrameStructure(TR::TypeDictionary *types)
 }
 
 void
-SOMppMethod::defineVMObjectStructure(TR::TypeDictionary *types)
+SOMppMethod::defineVMObjectStructure(OMR::JitBuilder::TypeDictionary *types)
 {
 	vmObject = types->DefineStruct("VMObject");
 
@@ -246,14 +246,14 @@ SOMppMethod::calculateBytecodeIndexForJump(long bytecodeIndex)
 }
 
 void
-SOMppMethod::createBuilderForBytecode(TR::BytecodeBuilder **bytecodeBuilderTable, uint8_t bytecode, int64_t bytecodeIndex)
+SOMppMethod::createBuilderForBytecode(OMR::JitBuilder::BytecodeBuilder **bytecodeBuilderTable, uint8_t bytecode, int64_t bytecodeIndex)
 {
-	TR::BytecodeBuilder *newBuilder = OrphanBytecodeBuilder(stack, bytecodeIndex, Bytecode::GetBytecodeName(bytecode));
-	bytecodeBuilderTable[bytecodeIndex] = newBuilder;
+  OMR::JitBuilder::BytecodeBuilder *newBuilder = OrphanBytecodeBuilder(bytecodeIndex, Bytecode::GetBytecodeName(bytecode)); //stack, bytecodeIndex, Bytecode::GetBytecodeName(bytecode));
+  bytecodeBuilderTable[bytecodeIndex] = newBuilder;
 }
 
 void
-SOMppMethod::justReturn(TR::IlBuilder *from)
+SOMppMethod::justReturn(OMR::JitBuilder::IlBuilder *from)
 {
 	from->Return(
 	from->   ConstInt64(3));
@@ -262,7 +262,7 @@ SOMppMethod::justReturn(TR::IlBuilder *from)
 bool
 SOMppMethod::buildIL()
 {
-	TR::BytecodeBuilder **bytecodeBuilderTable = nullptr;
+	OMR::JitBuilder::BytecodeBuilder **bytecodeBuilderTable = nullptr;
 	bool canHandle = true;
 	int64_t i = 0;
 
@@ -270,19 +270,19 @@ SOMppMethod::buildIL()
 	printf("\nGenerating code for %s\n", methodName);
 #endif
 
-	stackTop = new OMR::VirtualMachineRegisterInStruct(this, "VMFrame", "frame", "stack_ptr", "SP");
+	stackTop = new OMR::JitBuilder::VirtualMachineRegisterInStruct(this, "VMFrame", "frame", "stack_ptr", "SP");
 #if SOM_METHOD_DEBUG
 	printf("\t stacktop created\n");
 #endif
-	stack = new OMR::VirtualMachineOperandStack(this, 32, valueType, stackTop);
+	stack = new OMR::JitBuilder::VirtualMachineOperandStack(this, 32, valueType, stackTop);
 
 #if SOM_METHOD_DEBUG
 	printf("\t stack created\n");
 #endif
 
 	long numOfBytecodes = method->GetNumberOfBytecodes();
-	long tableSize = sizeof(TR::BytecodeBuilder *) * numOfBytecodes;
-	bytecodeBuilderTable = (TR::BytecodeBuilder **)malloc(tableSize);
+	long tableSize = sizeof(OMR::JitBuilder::BytecodeBuilder *) * numOfBytecodes;
+	bytecodeBuilderTable = (OMR::JitBuilder::BytecodeBuilder **)malloc(tableSize);
 	if (NULL == bytecodeBuilderTable) {
 		return false;
 	}
@@ -323,20 +323,20 @@ SOMppMethod::buildIL()
  *************************************************/
 
 void
-SOMppMethod::doDup(TR::BytecodeBuilder *builder)
+SOMppMethod::doDup(OMR::JitBuilder::BytecodeBuilder *builder)
 {
 	push(builder, peek(builder));
 	currentStackDepth += 1;
 }
 
 void
-SOMppMethod::doPushLocal(TR::BytecodeBuilder *builder, long bytecodeIndex)
+SOMppMethod::doPushLocal(OMR::JitBuilder::BytecodeBuilder *builder, long bytecodeIndex)
 {
 	uint8_t index = method->GetBytecode(bytecodeIndex + 1);
 	uint8_t level = method->GetBytecode(bytecodeIndex + 2);
 	const char *contextName = getContext(builder, level);
 
-	TR::IlValue *local =
+	OMR::JitBuilder::IlValue *local =
 	builder->LoadAt(pInt64,
 	builder->	IndexAt(pInt64,
 	builder->		LoadIndirect("VMFrame", "locals",
@@ -349,13 +349,13 @@ SOMppMethod::doPushLocal(TR::BytecodeBuilder *builder, long bytecodeIndex)
 }
 
 void
-SOMppMethod::doPushArgument(TR::BytecodeBuilder *builder, long bytecodeIndex)
+SOMppMethod::doPushArgument(OMR::JitBuilder::BytecodeBuilder *builder, long bytecodeIndex)
 {
 	uint8_t index = method->GetBytecode(bytecodeIndex + 1);
 	uint8_t level = method->GetBytecode(bytecodeIndex + 2);
 	const char *contextName = getContext(builder, level);
 
-	TR::IlValue *argument =
+	OMR::JitBuilder::IlValue *argument =
 	builder->LoadAt(pInt64,
 	builder->	IndexAt(pInt64,
 	builder->		LoadIndirect("VMFrame", "arguments",
@@ -368,13 +368,13 @@ SOMppMethod::doPushArgument(TR::BytecodeBuilder *builder, long bytecodeIndex)
 }
 
 void
-SOMppMethod::doPushField(TR::BytecodeBuilder *builder, VMMethod *currentMethod, long bytecodeIndex)
+SOMppMethod::doPushField(OMR::JitBuilder::BytecodeBuilder *builder, VMMethod *currentMethod, long bytecodeIndex)
 {
 	uint8_t fieldIndex = method->GetBytecode(bytecodeIndex + 1);
 
-	TR::IlValue *outerContext = getOuterContext(builder);
-	TR::IlValue *object = getSelfFromContext(builder, outerContext);
-	TR::IlValue *field = nullptr;
+	OMR::JitBuilder::IlValue *outerContext = getOuterContext(builder);
+	OMR::JitBuilder::IlValue *object = getSelfFromContext(builder, outerContext);
+	OMR::JitBuilder::IlValue *field = nullptr;
 
 	if (fieldIndex < FIELDNAMES_LENGTH) {
 		const char *fieldName = fieldNames[fieldIndex];
@@ -392,13 +392,13 @@ SOMppMethod::doPushField(TR::BytecodeBuilder *builder, VMMethod *currentMethod, 
 }
 
 void
-SOMppMethod::doPushBlock(TR::BytecodeBuilder *builder, long bytecodeIndex)
+SOMppMethod::doPushBlock(OMR::JitBuilder::BytecodeBuilder *builder, long bytecodeIndex)
 {
 	/* TODO come back and handle optimization in Interpreter::doPushBlock */
 	VMMethod* blockMethod = static_cast<VMMethod*>(method->GetConstant(bytecodeIndex));
 	long numOfArgs = blockMethod->GetNumberOfArguments();
 
-	TR::IlValue *block =
+	OMR::JitBuilder::IlValue *block =
 	builder->Call("getNewBlock", 3,
 	builder->	Load("frame"),
 	builder->	ConstInt64((int64_t)blockMethod),
@@ -410,11 +410,11 @@ SOMppMethod::doPushBlock(TR::BytecodeBuilder *builder, long bytecodeIndex)
 }
 
 void
-SOMppMethod::doPushConstant(TR::BytecodeBuilder *builder, long bytecodeIndex)
+SOMppMethod::doPushConstant(OMR::JitBuilder::BytecodeBuilder *builder, long bytecodeIndex)
 {
 	uint8_t valueOffset = method->GetBytecode(bytecodeIndex + 1);
 
-	TR::IlValue *constant =
+	OMR::JitBuilder::IlValue *constant =
 	builder->LoadAt(pInt64,
 	builder->	IndexAt(pInt64,
 	builder->		ConvertTo(pInt64,
@@ -427,16 +427,16 @@ SOMppMethod::doPushConstant(TR::BytecodeBuilder *builder, long bytecodeIndex)
 }
 
 void
-SOMppMethod::doPushGlobal(TR::BytecodeBuilder *builder, long bytecodeIndex)
+SOMppMethod::doPushGlobal(OMR::JitBuilder::BytecodeBuilder *builder, long bytecodeIndex)
 {
 	/* TODO If objects can move this is a runtime and not compile time fetch */
 	VMSymbol* globalName = static_cast<VMSymbol*>(method->GetConstant(bytecodeIndex));
 
-	TR::IlValue *global =
+	OMR::JitBuilder::IlValue *global =
 	builder->	Call("getGlobal", 1,
 	builder->		ConstInt64((int64_t)globalName));
 
-	TR::IlBuilder *globalIsNullPtr = NULL;
+	OMR::JitBuilder::IlBuilder *globalIsNullPtr = NULL;
 	builder->IfThen(&globalIsNullPtr,
 	builder->	EqualTo(global,
 	builder->		ConstInt64((int64_t)nullptr)));
@@ -457,19 +457,19 @@ SOMppMethod::doPushGlobal(TR::BytecodeBuilder *builder, long bytecodeIndex)
 }
 
 void
-SOMppMethod::doPop(TR::BytecodeBuilder *builder)
+SOMppMethod::doPop(OMR::JitBuilder::BytecodeBuilder *builder)
 {
 	pop(builder);
 	currentStackDepth -= 1;
 }
 
 void
-SOMppMethod::doPopLocal(TR::BytecodeBuilder *builder, long bytecodeIndex)
+SOMppMethod::doPopLocal(OMR::JitBuilder::BytecodeBuilder *builder, long bytecodeIndex)
 {
 	uint8_t index = method->GetBytecode(bytecodeIndex + 1);
 	uint8_t level = method->GetBytecode(bytecodeIndex + 2);
 
-	TR::IlValue *value = peek(builder);
+	OMR::JitBuilder::IlValue *value = peek(builder);
 	pop(builder);
 
 	const char* contextName = getContext(builder, level);
@@ -484,7 +484,7 @@ SOMppMethod::doPopLocal(TR::BytecodeBuilder *builder, long bytecodeIndex)
 }
 
 void
-SOMppMethod::doPopArgument(TR::BytecodeBuilder *builder, long bytecodeIndex)
+SOMppMethod::doPopArgument(OMR::JitBuilder::BytecodeBuilder *builder, long bytecodeIndex)
 {
 	uint8_t index = method->GetBytecode(bytecodeIndex + 1);
 	/* see Interpreter::doPopArgument and VMFrame::SetArgument.
@@ -492,7 +492,7 @@ SOMppMethod::doPopArgument(TR::BytecodeBuilder *builder, long bytecodeIndex)
 	uint8_t level = method->GetBytecode(bytecodeIndex + 2);
 	*/
 
-	TR::IlValue *value = peek(builder);
+	OMR::JitBuilder::IlValue *value = peek(builder);
 	pop(builder);
 
 	/*
@@ -501,7 +501,7 @@ SOMppMethod::doPopArgument(TR::BytecodeBuilder *builder, long bytecodeIndex)
 	builder->	Load("frame"));
 
 	if (level > 0) {
-		TR::IlBuilder *iloop = NULL;
+		OMR::JitBuilder::IlBuilder *iloop = NULL;
 		builder->ForLoopUp("i", &iloop,
 		builder->	ConstInt32(0),
 		builder->	ConstInt32(level),
@@ -523,13 +523,13 @@ SOMppMethod::doPopArgument(TR::BytecodeBuilder *builder, long bytecodeIndex)
 }
 
 void
-SOMppMethod::doPopField(TR::BytecodeBuilder *builder, long bytecodeIndex)
+SOMppMethod::doPopField(OMR::JitBuilder::BytecodeBuilder *builder, long bytecodeIndex)
 {
 	uint8_t fieldIndex = method->GetBytecode(bytecodeIndex + 1);
 
-	TR::IlValue *outerContext = getOuterContext(builder);
-	TR::IlValue *object = getSelfFromContext(builder, outerContext);
-	TR::IlValue *value = peek(builder);
+	OMR::JitBuilder::IlValue *outerContext = getOuterContext(builder);
+	OMR::JitBuilder::IlValue *object = getSelfFromContext(builder, outerContext);
+	OMR::JitBuilder::IlValue *value = peek(builder);
 	pop(builder);
 
 	if (fieldIndex < FIELDNAMES_LENGTH) {
@@ -544,7 +544,7 @@ SOMppMethod::doPopField(TR::BytecodeBuilder *builder, long bytecodeIndex)
 }
 
 void
-SOMppMethod::doSend(TR::BytecodeBuilder *builder, TR::BytecodeBuilder **bytecodeBuilderTable, long bytecodeIndex)
+SOMppMethod::doSend(OMR::JitBuilder::BytecodeBuilder *builder, OMR::JitBuilder::BytecodeBuilder **bytecodeBuilderTable, long bytecodeIndex)
 {
 	VMSymbol* signature = static_cast<VMSymbol*>(method->GetConstant(bytecodeIndex));
 
@@ -552,7 +552,7 @@ SOMppMethod::doSend(TR::BytecodeBuilder *builder, TR::BytecodeBuilder **bytecode
 
 	/* Check for inline now that I have receiver and receiverClass */
 	/* They are needed for both the generic send and inline path */
-	TR::IlBuilder *sendBuilder = doInlineIfPossible(builder, signature, bytecodeIndex);
+	OMR::JitBuilder::IlBuilder *sendBuilder = doInlineIfPossible(builder, signature, bytecodeIndex);
 
 	/* NULL means that the send was inlined and there is no failure case so no generic handling*/
 	if (NULL != sendBuilder) {
@@ -568,7 +568,7 @@ SOMppMethod::doSend(TR::BytecodeBuilder *builder, TR::BytecodeBuilder **bytecode
 		sendBuilder->		Load("invokable"),
 		sendBuilder->		ConstInt64((int64_t)bytecodeIndex)));
 
-		TR::IlBuilder *bail = NULL;
+		OMR::JitBuilder::IlBuilder *bail = NULL;
 		sendBuilder->IfThen(&bail,
 		sendBuilder->	EqualTo(
 		sendBuilder->		Load("return"),
@@ -576,7 +576,7 @@ SOMppMethod::doSend(TR::BytecodeBuilder *builder, TR::BytecodeBuilder **bytecode
 
 		justReturn(bail);
 
-		TR::IlBuilder *start = (TR::IlBuilder *)bytecodeBuilderTable[0];
+		OMR::JitBuilder::IlBuilder *start = (OMR::JitBuilder::IlBuilder *)bytecodeBuilderTable[0];
 		sendBuilder->IfCmpNotEqual(&start,
 		sendBuilder->	Load("return"),
 		sendBuilder->	ConstInt64((int64_t)bytecodeIndex));
@@ -586,7 +586,7 @@ SOMppMethod::doSend(TR::BytecodeBuilder *builder, TR::BytecodeBuilder **bytecode
 }
 
 void
-SOMppMethod::doSuperSend(TR::BytecodeBuilder *builder, TR::BytecodeBuilder **bytecodeBuilderTable, long bytecodeIndex)
+SOMppMethod::doSuperSend(OMR::JitBuilder::BytecodeBuilder *builder, OMR::JitBuilder::BytecodeBuilder **bytecodeBuilderTable, long bytecodeIndex)
 {
 	VMSymbol* signature = static_cast<VMSymbol*>(method->GetConstant(bytecodeIndex));
 	int numOfArgs = Signature::GetNumberOfArguments(signature);
@@ -603,7 +603,7 @@ SOMppMethod::doSuperSend(TR::BytecodeBuilder *builder, TR::BytecodeBuilder **byt
 	builder->		ConstInt64((int64_t)signature),
 	builder->		ConstInt64((int64_t)bytecodeIndex)));
 
-	TR::IlBuilder *bail = NULL;
+	OMR::JitBuilder::IlBuilder *bail = NULL;
 	builder->IfThen(&bail,
 	builder->   EqualTo(
 	builder->		Load("return"),
@@ -611,7 +611,8 @@ SOMppMethod::doSuperSend(TR::BytecodeBuilder *builder, TR::BytecodeBuilder **byt
 
 	justReturn(bail);
 
-	TR::IlBuilder *start = (TR::IlBuilder *)bytecodeBuilderTable[0];
+	OMR::JitBuilder::BytecodeBuilder *start = bytecodeBuilderTable[0];
+	
 	builder->IfCmpNotEqual(&start,
 	builder->	Load("return"),
 	builder->	ConstInt64((int64_t)bytecodeIndex));
@@ -620,9 +621,9 @@ SOMppMethod::doSuperSend(TR::BytecodeBuilder *builder, TR::BytecodeBuilder **byt
 }
 
 void
-SOMppMethod::doReturnLocal(TR::BytecodeBuilder *builder, long bytecodeIndex)
+SOMppMethod::doReturnLocal(OMR::JitBuilder::BytecodeBuilder *builder, long bytecodeIndex)
 {
-	TR::IlValue *result = peek(builder);
+	OMR::JitBuilder::IlValue *result = peek(builder);
 
 //	builder->StoreIndirect("VMFrame", "stack_ptr",
 //	builder->	Load("frame"),
@@ -645,9 +646,9 @@ SOMppMethod::doReturnLocal(TR::BytecodeBuilder *builder, long bytecodeIndex)
 }
 
 void
-SOMppMethod::doReturnNonLocal(TR::BytecodeBuilder *builder, long bytecodeIndex)
+SOMppMethod::doReturnNonLocal(OMR::JitBuilder::BytecodeBuilder *builder, long bytecodeIndex)
 {
-	TR::IlValue *result = peek(builder);
+	OMR::JitBuilder::IlValue *result = peek(builder);
 
 	builder->StoreIndirect("VMFrame", "stack_ptr",
 	builder->	Load("frame"),
@@ -662,8 +663,8 @@ SOMppMethod::doReturnNonLocal(TR::BytecodeBuilder *builder, long bytecodeIndex)
 	builder->		Load("interpreter"),
 	builder->		Load("frame")));
 
-	TR::IlBuilder *continuePath = NULL;
-	TR::IlBuilder *didEscapedSend = NULL;
+	OMR::JitBuilder::IlBuilder *continuePath = NULL;
+	OMR::JitBuilder::IlBuilder *didEscapedSend = NULL;
 
 	builder->IfThenElse(&continuePath, &didEscapedSend,
 	builder->	EqualTo(
@@ -686,56 +687,53 @@ SOMppMethod::doReturnNonLocal(TR::BytecodeBuilder *builder, long bytecodeIndex)
 }
 
 void
-SOMppMethod::doJumpIfFalse(TR::BytecodeBuilder *builder, TR::BytecodeBuilder **bytecodeBuilderTable, long bytecodeIndex)
+SOMppMethod::doJumpIfFalse(OMR::JitBuilder::BytecodeBuilder *builder, OMR::JitBuilder::BytecodeBuilder **bytecodeBuilderTable, long bytecodeIndex)
 {
-	TR::IlValue *value = peek(builder);
+	OMR::JitBuilder::IlValue *value = peek(builder);
 	pop(builder);
 
-	TR::BytecodeBuilder *destBuilder = bytecodeBuilderTable[calculateBytecodeIndexForJump(bytecodeIndex)];
+	OMR::JitBuilder::BytecodeBuilder *destBuilder = bytecodeBuilderTable[calculateBytecodeIndexForJump(bytecodeIndex)];
 	builder->AddSuccessorBuilder(&destBuilder);
 
-	TR::IlBuilder *dest = (TR::IlBuilder *)destBuilder;
-	builder->IfCmpEqual(&dest, value,
+	builder->IfCmpEqual(&destBuilder, value,
 	builder->	ConstInt64((int64_t)falseObject));
 
 	currentStackDepth -= 1;
 }
 
 void
-SOMppMethod::doJumpIfTrue(TR::BytecodeBuilder *builder, TR::BytecodeBuilder **bytecodeBuilderTable, long bytecodeIndex)
+SOMppMethod::doJumpIfTrue(OMR::JitBuilder::BytecodeBuilder *builder, OMR::JitBuilder::BytecodeBuilder **bytecodeBuilderTable, long bytecodeIndex)
 {
-	TR::IlValue *value = peek(builder);
+	OMR::JitBuilder::IlValue *value = peek(builder);
 	pop(builder);
 
 #if SOM_METHOD_DEBUG
 	printf(" jump to %lu ", calculateBytecodeIndexForJump(bytecodeIndex));
 #endif
 
-	TR::BytecodeBuilder *destBuilder = bytecodeBuilderTable[calculateBytecodeIndexForJump(bytecodeIndex)];
+	OMR::JitBuilder::BytecodeBuilder *destBuilder = bytecodeBuilderTable[calculateBytecodeIndexForJump(bytecodeIndex)];
 	builder->AddSuccessorBuilder(&destBuilder);
 
-	TR::IlBuilder *dest = (TR::IlBuilder *)destBuilder;
-	builder->IfCmpEqual(&dest, value,
+	builder->IfCmpEqual(&destBuilder, value,
 	builder->	ConstInt64((int64_t)trueObject));
 
 	currentStackDepth -= 1;
 }
 
 void
-SOMppMethod::doJump(TR::BytecodeBuilder *builder, TR::BytecodeBuilder **bytecodeBuilderTable, long bytecodeIndex)
+SOMppMethod::doJump(OMR::JitBuilder::BytecodeBuilder *builder, OMR::JitBuilder::BytecodeBuilder **bytecodeBuilderTable, long bytecodeIndex)
 {
-	TR::BytecodeBuilder *destBuilder = bytecodeBuilderTable[calculateBytecodeIndexForJump(bytecodeIndex)];
+	OMR::JitBuilder::BytecodeBuilder *destBuilder = bytecodeBuilderTable[calculateBytecodeIndexForJump(bytecodeIndex)];
 	builder->AddSuccessorBuilder(&destBuilder);
-
-	TR::IlBuilder *dest = (TR::IlBuilder *)destBuilder;
-	builder->Goto(&dest);
+	
+	builder->Goto(&destBuilder);
 	/* do not adjust currentStackDepth */
 }
 
 bool
-SOMppMethod::generateILForBytecode(TR::BytecodeBuilder **bytecodeBuilderTable, uint8_t bytecode, long bytecodeIndex)
+SOMppMethod::generateILForBytecode(OMR::JitBuilder::BytecodeBuilder **bytecodeBuilderTable, uint8_t bytecode, long bytecodeIndex)
 {
-	TR::BytecodeBuilder *builder = bytecodeBuilderTable[bytecodeIndex];
+	OMR::JitBuilder::BytecodeBuilder *builder = bytecodeBuilderTable[bytecodeIndex];
 #ifdef SOM_METHOD_DEBUG
 	printf("builder %lx ", (uint64_t)builder);
 #endif
@@ -745,7 +743,7 @@ SOMppMethod::generateILForBytecode(TR::BytecodeBuilder **bytecodeBuilderTable, u
 		return false;
 	}
 
-	TR::BytecodeBuilder *nextBytecodeBuilder = nullptr;
+	OMR::JitBuilder::BytecodeBuilder *nextBytecodeBuilder = nullptr;
 	long nextBytecodeIndex = bytecodeIndex + Bytecode::GetBytecodeLength(bytecode);
 	long numOfBytecodes = method->GetNumberOfBytecodes();
 	if (nextBytecodeIndex < numOfBytecodes) {
@@ -833,14 +831,14 @@ SOMppMethod::generateILForBytecode(TR::BytecodeBuilder **bytecodeBuilderTable, u
 	return canHandle;
 }
 
-TR::IlValue *
-SOMppMethod::peek(TR::IlBuilder *builder)
+OMR::JitBuilder::IlValue *
+SOMppMethod::peek(OMR::JitBuilder::IlBuilder *builder)
 {
 	return stack->Top();
 }
 
 void
-SOMppMethod::pop(TR::IlBuilder *builder)
+SOMppMethod::pop(OMR::JitBuilder::IlBuilder *builder)
 {
 //	builder->StoreIndirect("VMFrame", "stack_ptr",
 //	builder->	Load("frame"),
@@ -853,9 +851,9 @@ SOMppMethod::pop(TR::IlBuilder *builder)
 	stack->Pop(builder);
 }
 void
-SOMppMethod::push(TR::IlBuilder *builder, TR::IlValue *value)
+SOMppMethod::push(OMR::JitBuilder::IlBuilder *builder, OMR::JitBuilder::IlValue *value)
 {
-//	TR::IlValue *newSP =
+//	OMR::JitBuilder::IlValue *newSP =
 //	builder->Add(
 //	builder->	LoadIndirect("VMFrame", "stack_ptr",
 //	builder->		Load("frame")),
@@ -873,7 +871,7 @@ SOMppMethod::push(TR::IlBuilder *builder, TR::IlValue *value)
 }
 
 const char *
-SOMppMethod::getContext(TR::IlBuilder *builder, uint8_t level)
+SOMppMethod::getContext(OMR::JitBuilder::IlBuilder *builder, uint8_t level)
 {
 	if (level == 0) {
 		return "frame";
@@ -886,7 +884,7 @@ SOMppMethod::getContext(TR::IlBuilder *builder, uint8_t level)
 			builder->	LoadIndirect("VMFrame", "context",
 			builder->		Load("context")));
 		} else {
-			TR::IlBuilder *iloop = NULL;
+			OMR::JitBuilder::IlBuilder *iloop = NULL;
 			builder->ForLoopUp("i", &iloop,
 			builder->	ConstInt32(0),
 			builder->	ConstInt32(level),
@@ -900,8 +898,8 @@ SOMppMethod::getContext(TR::IlBuilder *builder, uint8_t level)
 	}
 }
 
-TR::IlValue *
-SOMppMethod::getOuterContext(TR::IlBuilder *builder)
+OMR::JitBuilder::IlValue *
+SOMppMethod::getOuterContext(OMR::JitBuilder::IlBuilder *builder)
 {
 	builder->Store("next",
 	builder->	Load("frame"));
@@ -911,7 +909,7 @@ SOMppMethod::getOuterContext(TR::IlBuilder *builder)
 	builder->		Load("next"),
 	builder->		NullAddress()));
 
-	TR::IlBuilder *loop = nullptr;
+	OMR::JitBuilder::IlBuilder *loop = nullptr;
 	builder->DoWhileLoop("contextNotNull", &loop);
 
 	loop->Store("outerContext",
@@ -927,10 +925,10 @@ SOMppMethod::getOuterContext(TR::IlBuilder *builder)
 	return builder->Load("outerContext");
 }
 
-TR::IlValue *
-SOMppMethod::getSelfFromContext(TR::IlBuilder *builder, TR::IlValue *context)
+OMR::JitBuilder::IlValue *
+SOMppMethod::getSelfFromContext(OMR::JitBuilder::IlBuilder *builder, OMR::JitBuilder::IlValue *context)
 {
-	TR::IlValue *object =
+	OMR::JitBuilder::IlValue *object =
 	builder->LoadAt(pInt64,
 	builder->	IndexAt(pInt64,
 	builder->		LoadIndirect("VMFrame", "arguments", context),
@@ -940,7 +938,7 @@ SOMppMethod::getSelfFromContext(TR::IlBuilder *builder, TR::IlValue *context)
 }
 
 int
-SOMppMethod::getReceiverForSend(TR::IlBuilder *builder, VMSymbol* signature)
+SOMppMethod::getReceiverForSend(OMR::JitBuilder::IlBuilder *builder, VMSymbol* signature)
 {
 	int numOfArgs = Signature::GetNumberOfArguments(signature);
 
@@ -962,20 +960,20 @@ SOMppMethod::getReceiverForSend(TR::IlBuilder *builder, VMSymbol* signature)
 	return numOfArgs;
 }
 
-TR::IlValue *
-SOMppMethod::getNumberOfIndexableFields(TR::IlBuilder *builder, TR::IlValue *array)
+OMR::JitBuilder::IlValue *
+SOMppMethod::getNumberOfIndexableFields(OMR::JitBuilder::IlBuilder *builder, OMR::JitBuilder::IlValue *array)
 {
-	TR::IlValue *objectSize = builder->LoadIndirect("VMObject", "objectSize", array);
-	TR::IlValue *numberOfFields = builder->LoadIndirect("VMObject", "numberOfFields", array);
+	OMR::JitBuilder::IlValue *objectSize = builder->LoadIndirect("VMObject", "objectSize", array);
+	OMR::JitBuilder::IlValue *numberOfFields = builder->LoadIndirect("VMObject", "numberOfFields", array);
 
-	TR::IlValue *extraSpace =
+	OMR::JitBuilder::IlValue *extraSpace =
 	builder->Sub(objectSize,
 	builder->	Add(
 	builder->		ConstInt64(sizeof(VMObject)),
 	builder->		Mul(
 	builder->			ConstInt64(sizeof(VMObject*)), numberOfFields)));
 
-	TR::IlValue *numberOfIndexableFields =
+	OMR::JitBuilder::IlValue *numberOfIndexableFields =
 	builder->Div(extraSpace,
 	builder->	ConstInt64(sizeof(VMObject*)));
 
@@ -983,20 +981,20 @@ SOMppMethod::getNumberOfIndexableFields(TR::IlBuilder *builder, TR::IlValue *arr
 }
 
 void
-SOMppMethod::getIndexableFieldSlot(TR::IlBuilder *builder, TR::IlValue *array)
+SOMppMethod::getIndexableFieldSlot(OMR::JitBuilder::IlBuilder *builder, OMR::JitBuilder::IlValue *array)
 {
-	TR::IlValue *numberOfFields = builder->LoadIndirect("VMObject", "numberOfFields", array);
-	TR::IlValue *vmObjectSize = builder->ConstInt64(sizeof(VMObject));
-	TR::IlValue *vmObjectPointerSize = builder->ConstInt64(sizeof(VMObject*));
-	TR::IlValue *index =
+	OMR::JitBuilder::IlValue *numberOfFields = builder->LoadIndirect("VMObject", "numberOfFields", array);
+	OMR::JitBuilder::IlValue *vmObjectSize = builder->ConstInt64(sizeof(VMObject));
+	OMR::JitBuilder::IlValue *vmObjectPointerSize = builder->ConstInt64(sizeof(VMObject*));
+	OMR::JitBuilder::IlValue *index =
 	builder->Add(
 	builder->	Load("indexValue"), numberOfFields);
 
-	TR::IlValue *actualIndex =
+	OMR::JitBuilder::IlValue *actualIndex =
 	builder->Sub(index,
 	builder->	ConstInt64(1));
 
-	TR::IlValue *offset =
+	OMR::JitBuilder::IlValue *offset =
 	builder->Add(vmObjectSize,
 	builder->	Mul(actualIndex, vmObjectPointerSize));
 
@@ -1008,10 +1006,10 @@ SOMppMethod::getIndexableFieldSlot(TR::IlBuilder *builder, TR::IlValue *array)
  * INLINE HELPERS
  *************************************************/
 
-TR::IlBuilder *
-SOMppMethod::verifyIntegerObject(TR::IlBuilder *builder, TR::IlValue *object, TR::IlBuilder **failPath)
+OMR::JitBuilder::IlBuilder *
+SOMppMethod::verifyIntegerObject(OMR::JitBuilder::IlBuilder *builder, OMR::JitBuilder::IlValue *object, OMR::JitBuilder::IlBuilder **failPath)
 {
-	TR::IlBuilder *isIntegerPath = nullptr;
+	OMR::JitBuilder::IlBuilder *isIntegerPath = nullptr;
 
 #if USE_TAGGING
 	builder->IfThenElse(&isIntegerPath, failPath,
@@ -1030,10 +1028,10 @@ SOMppMethod::verifyIntegerObject(TR::IlBuilder *builder, TR::IlValue *object, TR
 	return isIntegerPath;
 }
 
-TR::IlBuilder *
-SOMppMethod::getIntegerValue(TR::IlBuilder *builder, TR::IlValue *object, const char *valueName, TR::IlBuilder **failPath)
+OMR::JitBuilder::IlBuilder *
+SOMppMethod::getIntegerValue(OMR::JitBuilder::IlBuilder *builder, OMR::JitBuilder::IlValue *object, const char *valueName, OMR::JitBuilder::IlBuilder **failPath)
 {
-	TR::IlBuilder *isIntegerPath = verifyIntegerObject(builder, object, failPath);
+	OMR::JitBuilder::IlBuilder *isIntegerPath = verifyIntegerObject(builder, object, failPath);
 
 #if USE_TAGGING
 	isIntegerPath->Store(valueName,
@@ -1056,11 +1054,11 @@ SOMppMethod::getIntegerValue(TR::IlBuilder *builder, TR::IlValue *object, const 
 }
 
 void
-SOMppMethod::createNewInteger(TR::IlBuilder *builder, TR::IlValue *integerValue)
+SOMppMethod::createNewInteger(OMR::JitBuilder::IlBuilder *builder, OMR::JitBuilder::IlValue *integerValue)
 {
 #if USE_TAGGING
-	TR::IlBuilder *lessThanMin = nullptr;
-	TR::IlBuilder *possibleForTagging = nullptr;
+	OMR::JitBuilder::IlBuilder *lessThanMin = nullptr;
+	OMR::JitBuilder::IlBuilder *possibleForTagging = nullptr;
 	builder->IfThenElse(&lessThanMin, &possibleForTagging,
 	builder->	GreaterThan(
 	builder->		ConstInt64((int64_t)VMTAGGEDINTEGER_MIN), integerValue));
@@ -1068,8 +1066,8 @@ SOMppMethod::createNewInteger(TR::IlBuilder *builder, TR::IlValue *integerValue)
 	lessThanMin->Store("newInteger",
 	lessThanMin->	Call("newInteger", 1, integerValue));
 
-	TR::IlBuilder *greaterThanMax = nullptr;
-	TR::IlBuilder *tag = nullptr;
+	OMR::JitBuilder::IlBuilder *greaterThanMax = nullptr;
+	OMR::JitBuilder::IlBuilder *tag = nullptr;
 	possibleForTagging->IfThenElse(&greaterThanMax, &tag,
 	possibleForTagging->	LessThan(
 	possibleForTagging->		ConstInt64((int64_t)VMTAGGEDINTEGER_MAX), integerValue));
@@ -1097,24 +1095,24 @@ SOMppMethod::createNewInteger(TR::IlBuilder *builder, TR::IlValue *integerValue)
  * leftValueInteger from these objects.  If either are not Integers then failPath
  * will have sp at the original state.
  */
-TR::IlBuilder *
-SOMppMethod::generateILForIntergerOps(TR::BytecodeBuilder *builder, TR::IlBuilder **failPath)
+OMR::JitBuilder::IlBuilder *
+SOMppMethod::generateILForIntergerOps(OMR::JitBuilder::BytecodeBuilder *builder, OMR::JitBuilder::IlBuilder **failPath)
 {
-	TR::IlValue *sp =
+	OMR::JitBuilder::IlValue *sp =
 	builder->LoadIndirect("VMFrame", "stack_ptr",
 	builder->	Load("frame"));
 
-	TR::IlValue *rightObject =
+	OMR::JitBuilder::IlValue *rightObject =
 	builder->LoadAt(pInt64,
 	builder->	ConvertTo(pInt64, sp));
 
-	TR::IlBuilder *successPath = getIntegerValue(builder, rightObject, "rightValueInteger", failPath);
+	OMR::JitBuilder::IlBuilder *successPath = getIntegerValue(builder, rightObject, "rightValueInteger", failPath);
 
 	successPath->Store("spForIntegerOps",
 	successPath->	Sub(sp,
 	successPath->		ConstInt64(8)));
 
-	TR::IlValue *leftObject =
+	OMR::JitBuilder::IlValue *leftObject =
 	successPath->LoadAt(pInt64,
 	successPath->	ConvertTo(pInt64,
 	successPath->		Load("spForIntegerOps")));
@@ -1132,14 +1130,14 @@ SOMppMethod::generateILForIntergerOps(TR::BytecodeBuilder *builder, TR::IlBuilde
 	return successPath;
 }
 
-TR::IlBuilder *
-SOMppMethod::generateILForIntegerLessThan(TR::BytecodeBuilder *builder)
+OMR::JitBuilder::IlBuilder *
+SOMppMethod::generateILForIntegerLessThan(OMR::JitBuilder::BytecodeBuilder *builder)
 {
-	TR::IlBuilder *failInline = nullptr;
-	TR::IlBuilder *isIntegerPath = generateILForIntergerOps(builder, &failInline);
+	OMR::JitBuilder::IlBuilder *failInline = nullptr;
+	OMR::JitBuilder::IlBuilder *isIntegerPath = generateILForIntergerOps(builder, &failInline);
 
-	TR::IlBuilder *thenPath = nullptr;
-	TR::IlBuilder *elsePath = nullptr;
+	OMR::JitBuilder::IlBuilder *thenPath = nullptr;
+	OMR::JitBuilder::IlBuilder *elsePath = nullptr;
 	isIntegerPath->IfThenElse(&thenPath, &elsePath,
 	isIntegerPath->	LessThan(
 	isIntegerPath->		Load("leftValueInteger"),
@@ -1160,14 +1158,14 @@ SOMppMethod::generateILForIntegerLessThan(TR::BytecodeBuilder *builder)
 	return failInline;
 }
 
-TR::IlBuilder *
-SOMppMethod::generateILForIntegerLessThanEqual(TR::BytecodeBuilder *builder)
+OMR::JitBuilder::IlBuilder *
+SOMppMethod::generateILForIntegerLessThanEqual(OMR::JitBuilder::BytecodeBuilder *builder)
 {
-	TR::IlBuilder *failInline = nullptr;
-	TR::IlBuilder *isIntegerPath = generateILForIntergerOps(builder, &failInline);
+	OMR::JitBuilder::IlBuilder *failInline = nullptr;
+	OMR::JitBuilder::IlBuilder *isIntegerPath = generateILForIntergerOps(builder, &failInline);
 
-	TR::IlBuilder *thenPath = nullptr;
-	TR::IlBuilder *elsePath = nullptr;
+	OMR::JitBuilder::IlBuilder *thenPath = nullptr;
+	OMR::JitBuilder::IlBuilder *elsePath = nullptr;
 	isIntegerPath->IfThenElse(&thenPath, &elsePath,
 	isIntegerPath->	GreaterThan(
 	isIntegerPath->		Load("leftValueInteger"),
@@ -1188,14 +1186,14 @@ SOMppMethod::generateILForIntegerLessThanEqual(TR::BytecodeBuilder *builder)
 	return failInline;
 }
 
-TR::IlBuilder *
-SOMppMethod::generateILForIntegerGreaterThan(TR::BytecodeBuilder *builder)
+OMR::JitBuilder::IlBuilder *
+SOMppMethod::generateILForIntegerGreaterThan(OMR::JitBuilder::BytecodeBuilder *builder)
 {
-	TR::IlBuilder *failInline = nullptr;
-	TR::IlBuilder *isIntegerPath = generateILForIntergerOps(builder, &failInline);
+	OMR::JitBuilder::IlBuilder *failInline = nullptr;
+	OMR::JitBuilder::IlBuilder *isIntegerPath = generateILForIntergerOps(builder, &failInline);
 
-	TR::IlBuilder *thenPath = nullptr;
-	TR::IlBuilder *elsePath = nullptr;
+	OMR::JitBuilder::IlBuilder *thenPath = nullptr;
+	OMR::JitBuilder::IlBuilder *elsePath = nullptr;
 	isIntegerPath->IfThenElse(&thenPath, &elsePath,
 	isIntegerPath->	GreaterThan(
 	isIntegerPath->		Load("leftValueInteger"),
@@ -1216,14 +1214,14 @@ SOMppMethod::generateILForIntegerGreaterThan(TR::BytecodeBuilder *builder)
 	return failInline;
 }
 
-TR::IlBuilder *
-SOMppMethod::generateILForIntegerGreaterThanEqual(TR::BytecodeBuilder *builder)
+OMR::JitBuilder::IlBuilder *
+SOMppMethod::generateILForIntegerGreaterThanEqual(OMR::JitBuilder::BytecodeBuilder *builder)
 {
-	TR::IlBuilder *failInline = nullptr;
-	TR::IlBuilder *isIntegerPath = generateILForIntergerOps(builder, &failInline);
+	OMR::JitBuilder::IlBuilder *failInline = nullptr;
+	OMR::JitBuilder::IlBuilder *isIntegerPath = generateILForIntergerOps(builder, &failInline);
 
-	TR::IlBuilder *thenPath = nullptr;
-	TR::IlBuilder *elsePath = nullptr;
+	OMR::JitBuilder::IlBuilder *thenPath = nullptr;
+	OMR::JitBuilder::IlBuilder *elsePath = nullptr;
 	isIntegerPath->IfThenElse(&thenPath, &elsePath,
 	isIntegerPath->	LessThan(
 	isIntegerPath->		Load("leftValueInteger"),
@@ -1244,14 +1242,14 @@ SOMppMethod::generateILForIntegerGreaterThanEqual(TR::BytecodeBuilder *builder)
 	return failInline;
 }
 
-TR::IlBuilder *
-SOMppMethod::generateILForIntegerEqual(TR::BytecodeBuilder *builder)
+OMR::JitBuilder::IlBuilder *
+SOMppMethod::generateILForIntegerEqual(OMR::JitBuilder::BytecodeBuilder *builder)
 {
-	TR::IlBuilder *failInline = nullptr;
-	TR::IlBuilder *isIntegerPath = generateILForIntergerOps(builder, &failInline);
+	OMR::JitBuilder::IlBuilder *failInline = nullptr;
+	OMR::JitBuilder::IlBuilder *isIntegerPath = generateILForIntergerOps(builder, &failInline);
 
-	TR::IlBuilder *thenPath = nullptr;
-	TR::IlBuilder *elsePath = nullptr;
+	OMR::JitBuilder::IlBuilder *thenPath = nullptr;
+	OMR::JitBuilder::IlBuilder *elsePath = nullptr;
 	isIntegerPath->IfThenElse(&thenPath, &elsePath,
 	isIntegerPath->	EqualTo(
 	isIntegerPath->		Load("leftValueInteger"),
@@ -1272,14 +1270,14 @@ SOMppMethod::generateILForIntegerEqual(TR::BytecodeBuilder *builder)
 	return failInline;
 }
 
-TR::IlBuilder *
-SOMppMethod::generateILForIntegerNotEqual(TR::BytecodeBuilder *builder)
+OMR::JitBuilder::IlBuilder *
+SOMppMethod::generateILForIntegerNotEqual(OMR::JitBuilder::BytecodeBuilder *builder)
 {
-	TR::IlBuilder *failInline = nullptr;
-	TR::IlBuilder *isIntegerPath = generateILForIntergerOps(builder, &failInline);
+	OMR::JitBuilder::IlBuilder *failInline = nullptr;
+	OMR::JitBuilder::IlBuilder *isIntegerPath = generateILForIntergerOps(builder, &failInline);
 
-	TR::IlBuilder *thenPath = nullptr;
-	TR::IlBuilder *elsePath = nullptr;
+	OMR::JitBuilder::IlBuilder *thenPath = nullptr;
+	OMR::JitBuilder::IlBuilder *elsePath = nullptr;
 	isIntegerPath->IfThenElse(&thenPath, &elsePath,
 	isIntegerPath->	NotEqualTo(
 	isIntegerPath->		Load("leftValueInteger"),
@@ -1300,13 +1298,13 @@ SOMppMethod::generateILForIntegerNotEqual(TR::BytecodeBuilder *builder)
 	return failInline;
 }
 
-TR::IlBuilder *
-SOMppMethod::generateILForIntegerPlus(TR::BytecodeBuilder *builder)
+OMR::JitBuilder::IlBuilder *
+SOMppMethod::generateILForIntegerPlus(OMR::JitBuilder::BytecodeBuilder *builder)
 {
-	TR::IlBuilder *failInline = nullptr;
-	TR::IlBuilder *isIntegerPath = generateILForIntergerOps(builder, &failInline);
+	OMR::JitBuilder::IlBuilder *failInline = nullptr;
+	OMR::JitBuilder::IlBuilder *isIntegerPath = generateILForIntergerOps(builder, &failInline);
 
-	TR::IlValue *integerValue =
+	OMR::JitBuilder::IlValue *integerValue =
 	isIntegerPath->Add(
 	isIntegerPath->	Load("leftValueInteger"),
 	isIntegerPath->	Load("rightValueInteger"));
@@ -1322,13 +1320,13 @@ SOMppMethod::generateILForIntegerPlus(TR::BytecodeBuilder *builder)
 	return failInline;
 }
 
-TR::IlBuilder *
-SOMppMethod::generateILForIntegerMinus(TR::BytecodeBuilder *builder)
+OMR::JitBuilder::IlBuilder *
+SOMppMethod::generateILForIntegerMinus(OMR::JitBuilder::BytecodeBuilder *builder)
 {
-	TR::IlBuilder *failInline = nullptr;
-	TR::IlBuilder *isIntegerPath = generateILForIntergerOps(builder, &failInline);
+	OMR::JitBuilder::IlBuilder *failInline = nullptr;
+	OMR::JitBuilder::IlBuilder *isIntegerPath = generateILForIntergerOps(builder, &failInline);
 
-	TR::IlValue *integerValue =
+	OMR::JitBuilder::IlValue *integerValue =
 	isIntegerPath->Sub(
 	isIntegerPath->	Load("leftValueInteger"),
 	isIntegerPath->	Load("rightValueInteger"));
@@ -1344,13 +1342,13 @@ SOMppMethod::generateILForIntegerMinus(TR::BytecodeBuilder *builder)
 	return failInline;
 }
 
-TR::IlBuilder *
-SOMppMethod::generateILForIntegerStar(TR::BytecodeBuilder *builder)
+OMR::JitBuilder::IlBuilder *
+SOMppMethod::generateILForIntegerStar(OMR::JitBuilder::BytecodeBuilder *builder)
 {
-	TR::IlBuilder *failInline = nullptr;
-	TR::IlBuilder *isIntegerPath = generateILForIntergerOps(builder, &failInline);
+	OMR::JitBuilder::IlBuilder *failInline = nullptr;
+	OMR::JitBuilder::IlBuilder *isIntegerPath = generateILForIntergerOps(builder, &failInline);
 
-	TR::IlValue *integerValue =
+	OMR::JitBuilder::IlValue *integerValue =
 	isIntegerPath->Mul(
 	isIntegerPath->	Load("leftValueInteger"),
 	isIntegerPath->	Load("rightValueInteger"));
@@ -1366,15 +1364,15 @@ SOMppMethod::generateILForIntegerStar(TR::BytecodeBuilder *builder)
 	return failInline;
 }
 
-TR::IlBuilder *
-SOMppMethod::generateILForIntegerValue(TR::BytecodeBuilder *builder)
+OMR::JitBuilder::IlBuilder *
+SOMppMethod::generateILForIntegerValue(OMR::JitBuilder::BytecodeBuilder *builder)
 {
-	TR::IlBuilder *failInline = nullptr;
-	TR::IlValue *sp =
+	OMR::JitBuilder::IlBuilder *failInline = nullptr;
+	OMR::JitBuilder::IlValue *sp =
 	builder->LoadIndirect("VMFrame", "stack_ptr",
 	builder->	Load("frame"));
 
-	TR::IlValue *currentObject =
+	OMR::JitBuilder::IlValue *currentObject =
 	builder->LoadAt(pInt64,
 	builder->	ConvertTo(pInt64, sp));
 
@@ -1384,14 +1382,14 @@ SOMppMethod::generateILForIntegerValue(TR::BytecodeBuilder *builder)
 	return failInline;
 }
 
-TR::IlBuilder *
-SOMppMethod::generateILForIntegerMax(TR::BytecodeBuilder *builder)
+OMR::JitBuilder::IlBuilder *
+SOMppMethod::generateILForIntegerMax(OMR::JitBuilder::BytecodeBuilder *builder)
 {
 	/* TODO fix because rightObject does not exist */
-	TR::IlBuilder *failInline = nullptr;
-	TR::IlBuilder *isIntegerPath = generateILForIntergerOps(builder, &failInline);
+	OMR::JitBuilder::IlBuilder *failInline = nullptr;
+	OMR::JitBuilder::IlBuilder *isIntegerPath = generateILForIntergerOps(builder, &failInline);
 
-	TR::IlBuilder *thenPath = nullptr;
+	OMR::JitBuilder::IlBuilder *thenPath = nullptr;
 	isIntegerPath->IfThen(&thenPath,
 	isIntegerPath->	LessThan(
 	isIntegerPath->		Load("leftValueInteger"),
@@ -1408,21 +1406,21 @@ SOMppMethod::generateILForIntegerMax(TR::BytecodeBuilder *builder)
 	return failInline;
 }
 
-TR::IlBuilder *
-SOMppMethod::generateILForIntegerNegated(TR::BytecodeBuilder *builder)
+OMR::JitBuilder::IlBuilder *
+SOMppMethod::generateILForIntegerNegated(OMR::JitBuilder::BytecodeBuilder *builder)
 {
-	TR::IlValue *sp =
+	OMR::JitBuilder::IlValue *sp =
 	builder->LoadIndirect("VMFrame", "stack_ptr",
 	builder->	Load("frame"));
 
-	TR::IlValue *integerObject =
+	OMR::JitBuilder::IlValue *integerObject =
 	builder->LoadAt(pInt64,
 	builder->	ConvertTo(pInt64, sp));
 
-	TR::IlBuilder *failInline = nullptr;
-	TR::IlBuilder *isIntegerPath = getIntegerValue(builder, integerObject, "integerValue", &failInline);
+	OMR::JitBuilder::IlBuilder *failInline = nullptr;
+	OMR::JitBuilder::IlBuilder *isIntegerPath = getIntegerValue(builder, integerObject, "integerValue", &failInline);
 
-	TR::IlValue *integerValue =
+	OMR::JitBuilder::IlValue *integerValue =
 	isIntegerPath->Sub(
 	isIntegerPath->	ConstInt64(0),
 	isIntegerPath->	Load("integerValue"));
@@ -1437,27 +1435,27 @@ SOMppMethod::generateILForIntegerNegated(TR::BytecodeBuilder *builder)
 	return failInline;
 }
 
-TR::IlBuilder *
-SOMppMethod::generateILForIntegerAbs(TR::BytecodeBuilder *builder)
+OMR::JitBuilder::IlBuilder *
+SOMppMethod::generateILForIntegerAbs(OMR::JitBuilder::BytecodeBuilder *builder)
 {
-	TR::IlValue *sp =
+	OMR::JitBuilder::IlValue *sp =
 	builder->LoadIndirect("VMFrame", "stack_ptr",
 	builder->	Load("frame"));
 
-	TR::IlValue *integerObject =
+	OMR::JitBuilder::IlValue *integerObject =
 	builder->LoadAt(pInt64,
 	builder->	ConvertTo(pInt64, sp));
 
-	TR::IlBuilder *failInline = nullptr;
-	TR::IlBuilder *isIntegerPath = getIntegerValue(builder, integerObject, "integerValue", &failInline);
+	OMR::JitBuilder::IlBuilder *failInline = nullptr;
+	OMR::JitBuilder::IlBuilder *isIntegerPath = getIntegerValue(builder, integerObject, "integerValue", &failInline);
 
-	TR::IlBuilder *isNegative = nullptr;
+	OMR::JitBuilder::IlBuilder *isNegative = nullptr;
 	isIntegerPath->IfThen(&isNegative,
 	isIntegerPath->	LessThan(
 	isIntegerPath->		Load("integerValue"),
 	isIntegerPath->		ConstInt64(0)));
 
-	TR::IlValue *integerValue =
+	OMR::JitBuilder::IlValue *integerValue =
 	isNegative->Sub(
 	isNegative->	ConstInt64(0),
 	isNegative->	Load("integerValue"));
@@ -1472,33 +1470,33 @@ SOMppMethod::generateILForIntegerAbs(TR::BytecodeBuilder *builder)
 	return failInline;
 }
 
-TR::IlBuilder *
-SOMppMethod::generateILForArrayAt(TR::BytecodeBuilder *builder)
+OMR::JitBuilder::IlBuilder *
+SOMppMethod::generateILForArrayAt(OMR::JitBuilder::BytecodeBuilder *builder)
 {
-	TR::IlBuilder *failInline = nullptr;
+	OMR::JitBuilder::IlBuilder *failInline = nullptr;
 
-	TR::IlValue *sp =
+	OMR::JitBuilder::IlValue *sp =
 	builder->LoadIndirect("VMFrame", "stack_ptr",
 	builder->	Load("frame"));
 
-	TR::IlValue *indexObject =
+	OMR::JitBuilder::IlValue *indexObject =
 	builder->LoadAt(pInt64,
 	builder->	ConvertTo(pInt64, sp));
 
-	TR::IlBuilder *indexIsInteger = getIntegerValue(builder, indexObject, "indexValue", &failInline);
+	OMR::JitBuilder::IlBuilder *indexIsInteger = getIntegerValue(builder, indexObject, "indexValue", &failInline);
 
-	TR::IlValue * spForReceiver =
+	OMR::JitBuilder::IlValue * spForReceiver =
 	indexIsInteger->Sub(sp,
 	indexIsInteger->	ConstInt64(8));
 
-	TR::IlValue *arrayObject =
+	OMR::JitBuilder::IlValue *arrayObject =
 	indexIsInteger->LoadAt(pInt64,
 	indexIsInteger->	ConvertTo(pInt64, spForReceiver));
 
 	indexIsInteger->Store("arrayClass",
 	indexIsInteger->	LoadIndirect("VMObject", "clazz", arrayObject));
 
-	TR::IlBuilder *isArrayPath = nullptr;
+	OMR::JitBuilder::IlBuilder *isArrayPath = nullptr;
 	indexIsInteger->IfThenElse(&isArrayPath, &failInline,
 	indexIsInteger->	EqualTo(
 	indexIsInteger->		Load("arrayClass"),
@@ -1526,12 +1524,12 @@ SOMppMethod::generateILForArrayAt(TR::BytecodeBuilder *builder)
 	return failInline;
 }
 
-TR::IlBuilder *
-SOMppMethod::generateILForArrayAtPut(TR::BytecodeBuilder *builder)
+OMR::JitBuilder::IlBuilder *
+SOMppMethod::generateILForArrayAtPut(OMR::JitBuilder::BytecodeBuilder *builder)
 {
-	TR::IlBuilder *failInline = nullptr;
+	OMR::JitBuilder::IlBuilder *failInline = nullptr;
 
-	TR::IlValue *sp =
+	OMR::JitBuilder::IlValue *sp =
 	builder->LoadIndirect("VMFrame", "stack_ptr",
 	builder->	Load("frame"));
 
@@ -1539,27 +1537,27 @@ SOMppMethod::generateILForArrayAtPut(TR::BytecodeBuilder *builder)
 	builder->	LoadAt(pInt64,
 	builder->		ConvertTo(pInt64, sp)));
 
-	TR::IlValue *indexObject =
+	OMR::JitBuilder::IlValue *indexObject =
 	builder->LoadAt(pInt64,
 	builder->	ConvertTo(pInt64,
 	builder->		Sub(sp,
 	builder->			ConstInt64(8))));
 
-	TR::IlBuilder *indexIsInteger = getIntegerValue(builder, indexObject, "indexValue", &failInline);
+	OMR::JitBuilder::IlBuilder *indexIsInteger = getIntegerValue(builder, indexObject, "indexValue", &failInline);
 
-	TR::IlValue * spForReceiver =
+	OMR::JitBuilder::IlValue * spForReceiver =
 	indexIsInteger->Sub(sp,
 	indexIsInteger->	ConstInt64(16));
 
 	/* peek the array object without popping */
-	TR::IlValue *arrayObject =
+	OMR::JitBuilder::IlValue *arrayObject =
 	indexIsInteger->LoadAt(pInt64,
 	indexIsInteger->	ConvertTo(pInt64, spForReceiver));
 
 	indexIsInteger->Store("arrayClass",
 	indexIsInteger->	LoadIndirect("VMObject", "clazz", arrayObject));
 
-	TR::IlBuilder *isArrayPath = nullptr;
+	OMR::JitBuilder::IlBuilder *isArrayPath = nullptr;
 	indexIsInteger->IfThenElse(&isArrayPath, &failInline,
 	indexIsInteger->	EqualTo(
 	indexIsInteger->		Load("arrayClass"),
@@ -1581,23 +1579,23 @@ SOMppMethod::generateILForArrayAtPut(TR::BytecodeBuilder *builder)
 	return failInline;
 }
 
-TR::IlBuilder *
-SOMppMethod::generateILForArrayLength(TR::BytecodeBuilder *builder)
+OMR::JitBuilder::IlBuilder *
+SOMppMethod::generateILForArrayLength(OMR::JitBuilder::BytecodeBuilder *builder)
 {
-	TR::IlBuilder *failInline = nullptr;
+	OMR::JitBuilder::IlBuilder *failInline = nullptr;
 
-	TR::IlValue *sp =
+	OMR::JitBuilder::IlValue *sp =
 	builder->LoadIndirect("VMFrame", "stack_ptr",
 	builder->	Load("frame"));
 
-	TR::IlValue *arrayObject =
+	OMR::JitBuilder::IlValue *arrayObject =
 	builder->LoadAt(pInt64,
 	builder->	ConvertTo(pInt64, sp));
 
 	builder->Store("arrayClass",
 	builder->	Call("getClass", 1, arrayObject));
 
-	TR::IlBuilder *isArrayPath = nullptr;
+	OMR::JitBuilder::IlBuilder *isArrayPath = nullptr;
 
 	builder->IfThenElse(&isArrayPath, &failInline,
 	builder->	EqualTo(
@@ -1614,13 +1612,13 @@ SOMppMethod::generateILForArrayLength(TR::BytecodeBuilder *builder)
 	return failInline;
 }
 
-TR::IlBuilder *
-SOMppMethod::generateILForNilisNil(TR::BytecodeBuilder *builder)
+OMR::JitBuilder::IlBuilder *
+SOMppMethod::generateILForNilisNil(OMR::JitBuilder::BytecodeBuilder *builder)
 {
-	TR::IlBuilder *isNil = NULL;
-	TR::IlBuilder *notNil = NULL;
+	OMR::JitBuilder::IlBuilder *isNil = NULL;
+	OMR::JitBuilder::IlBuilder *notNil = NULL;
 
-	TR::IlValue *sp =
+	OMR::JitBuilder::IlValue *sp =
 	builder->LoadIndirect("VMFrame", "stack_ptr",
 	builder->	Load("frame"));
 
@@ -1653,13 +1651,13 @@ SOMppMethod::generateILForNilisNil(TR::BytecodeBuilder *builder)
 	return nullptr;
 }
 
-TR::IlBuilder *
-SOMppMethod::generateILForBooleanNot(TR::BytecodeBuilder *builder)
+OMR::JitBuilder::IlBuilder *
+SOMppMethod::generateILForBooleanNot(OMR::JitBuilder::BytecodeBuilder *builder)
 {
-	TR::IlBuilder *isTrue = NULL;
-	TR::IlBuilder *notTrue = NULL;
+	OMR::JitBuilder::IlBuilder *isTrue = NULL;
+	OMR::JitBuilder::IlBuilder *notTrue = NULL;
 
-	TR::IlValue *sp =
+	OMR::JitBuilder::IlValue *sp =
 	builder->LoadIndirect("VMFrame", "stack_ptr",
 	builder->	Load("frame"));
 
@@ -1686,8 +1684,8 @@ SOMppMethod::generateILForBooleanNot(TR::BytecodeBuilder *builder)
 	isTrue->	ConvertTo(pInt64, sp),
 	isTrue->	Load("falseObject"));
 
-	TR::IlBuilder *isFalse = NULL;
-	TR::IlBuilder *failInline = NULL;
+	OMR::JitBuilder::IlBuilder *isFalse = NULL;
+	OMR::JitBuilder::IlBuilder *failInline = NULL;
 
 	notTrue->IfThenElse(&isFalse, &failInline,
 	notTrue->	EqualTo(
@@ -1701,10 +1699,10 @@ SOMppMethod::generateILForBooleanNot(TR::BytecodeBuilder *builder)
 	return failInline;
 }
 
-TR::IlBuilder *
-SOMppMethod::generateILForDoubleOps(TR::BytecodeBuilder *builder, TR::IlBuilder **failPath)
+OMR::JitBuilder::IlBuilder *
+SOMppMethod::generateILForDoubleOps(OMR::JitBuilder::BytecodeBuilder *builder, OMR::JitBuilder::IlBuilder **failPath)
 {
-	TR::IlValue *sp =
+	OMR::JitBuilder::IlValue *sp =
 	builder->LoadIndirect("VMFrame", "stack_ptr",
 	builder->	Load("frame"));
 
@@ -1716,7 +1714,7 @@ SOMppMethod::generateILForDoubleOps(TR::BytecodeBuilder *builder, TR::IlBuilder 
 	builder->	Call("getClass", 1,
 	builder->		Load("rightObjectDouble")));
 
-	TR::IlBuilder *rightIsDouble = NULL;
+	OMR::JitBuilder::IlBuilder *rightIsDouble = NULL;
 	builder->IfThenElse(&rightIsDouble, failPath,
 	builder->	EqualTo(
 	builder->		Load("rightClassDouble"),
@@ -1735,7 +1733,7 @@ SOMppMethod::generateILForDoubleOps(TR::BytecodeBuilder *builder, TR::IlBuilder 
 	rightIsDouble->	Call("getClass", 1,
 	rightIsDouble->		Load("leftObjectDouble")));
 
-	TR::IlBuilder *isDoublePath = NULL;
+	OMR::JitBuilder::IlBuilder *isDoublePath = NULL;
 	rightIsDouble->IfThenElse(&isDoublePath, failPath,
 	rightIsDouble->	EqualTo(
 	rightIsDouble->		Load("leftClassDouble"),
@@ -1776,14 +1774,14 @@ SOMppMethod::generateILForDoubleOps(TR::BytecodeBuilder *builder, TR::IlBuilder 
 	return isDoublePath;
 }
 
-TR::IlBuilder *
-SOMppMethod::generateILForDoubleLessThan(TR::BytecodeBuilder *builder)
+OMR::JitBuilder::IlBuilder *
+SOMppMethod::generateILForDoubleLessThan(OMR::JitBuilder::BytecodeBuilder *builder)
 {
-	TR::IlBuilder *failInline = NULL;
-	TR::IlBuilder *isDoublePath = generateILForDoubleOps(builder, &failInline);
+	OMR::JitBuilder::IlBuilder *failInline = NULL;
+	OMR::JitBuilder::IlBuilder *isDoublePath = generateILForDoubleOps(builder, &failInline);
 
-	TR::IlBuilder *thenPath = NULL;
-	TR::IlBuilder *elsePath = NULL;
+	OMR::JitBuilder::IlBuilder *thenPath = NULL;
+	OMR::JitBuilder::IlBuilder *elsePath = NULL;
 	isDoublePath->IfThenElse(&thenPath, &elsePath,
 	isDoublePath->	LessThan(
 	isDoublePath->		Load("leftValueDouble"),
@@ -1804,14 +1802,14 @@ SOMppMethod::generateILForDoubleLessThan(TR::BytecodeBuilder *builder)
 	return failInline;
 }
 
-TR::IlBuilder *
-SOMppMethod::generateILForDoubleLessThanEqual(TR::BytecodeBuilder *builder)
+OMR::JitBuilder::IlBuilder *
+SOMppMethod::generateILForDoubleLessThanEqual(OMR::JitBuilder::BytecodeBuilder *builder)
 {
-	TR::IlBuilder *failInline = NULL;
-	TR::IlBuilder *isDoublePath = generateILForDoubleOps(builder, &failInline);
+	OMR::JitBuilder::IlBuilder *failInline = NULL;
+	OMR::JitBuilder::IlBuilder *isDoublePath = generateILForDoubleOps(builder, &failInline);
 
-	TR::IlBuilder *thenPath = NULL;
-	TR::IlBuilder *elsePath = NULL;
+	OMR::JitBuilder::IlBuilder *thenPath = NULL;
+	OMR::JitBuilder::IlBuilder *elsePath = NULL;
 	isDoublePath->IfThenElse(&thenPath, &elsePath,
 	isDoublePath->	GreaterThan(
 	isDoublePath->		Load("leftValueDouble"),
@@ -1832,14 +1830,14 @@ SOMppMethod::generateILForDoubleLessThanEqual(TR::BytecodeBuilder *builder)
 	return failInline;
 }
 
-TR::IlBuilder *
-SOMppMethod::generateILForDoubleGreaterThan(TR::BytecodeBuilder *builder)
+OMR::JitBuilder::IlBuilder *
+SOMppMethod::generateILForDoubleGreaterThan(OMR::JitBuilder::BytecodeBuilder *builder)
 {
-	TR::IlBuilder *failInline = NULL;
-	TR::IlBuilder *isDoublePath = generateILForDoubleOps(builder, &failInline);
+	OMR::JitBuilder::IlBuilder *failInline = NULL;
+	OMR::JitBuilder::IlBuilder *isDoublePath = generateILForDoubleOps(builder, &failInline);
 
-	TR::IlBuilder *thenPath = NULL;
-	TR::IlBuilder *elsePath = NULL;
+	OMR::JitBuilder::IlBuilder *thenPath = NULL;
+	OMR::JitBuilder::IlBuilder *elsePath = NULL;
 	isDoublePath->IfThenElse(&thenPath, &elsePath,
 	isDoublePath->	GreaterThan(
 	isDoublePath->		Load("leftValueDouble"),
@@ -1860,14 +1858,14 @@ SOMppMethod::generateILForDoubleGreaterThan(TR::BytecodeBuilder *builder)
 	return failInline;
 }
 
-TR::IlBuilder *
-SOMppMethod::generateILForDoubleGreaterThanEqual(TR::BytecodeBuilder *builder)
+OMR::JitBuilder::IlBuilder *
+SOMppMethod::generateILForDoubleGreaterThanEqual(OMR::JitBuilder::BytecodeBuilder *builder)
 {
-	TR::IlBuilder *failInline = NULL;
-	TR::IlBuilder *isDoublePath = generateILForDoubleOps(builder, &failInline);
+	OMR::JitBuilder::IlBuilder *failInline = NULL;
+	OMR::JitBuilder::IlBuilder *isDoublePath = generateILForDoubleOps(builder, &failInline);
 
-	TR::IlBuilder *thenPath = NULL;
-	TR::IlBuilder *elsePath = NULL;
+	OMR::JitBuilder::IlBuilder *thenPath = NULL;
+	OMR::JitBuilder::IlBuilder *elsePath = NULL;
 	isDoublePath->IfThenElse(&thenPath, &elsePath,
 	isDoublePath->	LessThan(
 	isDoublePath->		Load("leftValueDouble"),
@@ -1888,14 +1886,14 @@ SOMppMethod::generateILForDoubleGreaterThanEqual(TR::BytecodeBuilder *builder)
 	return failInline;
 }
 
-TR::IlBuilder *
-SOMppMethod::generateILForDoubleEqual(TR::BytecodeBuilder *builder)
+OMR::JitBuilder::IlBuilder *
+SOMppMethod::generateILForDoubleEqual(OMR::JitBuilder::BytecodeBuilder *builder)
 {
-	TR::IlBuilder *failInline = NULL;
-	TR::IlBuilder *isDoublePath = generateILForDoubleOps(builder, &failInline);
+	OMR::JitBuilder::IlBuilder *failInline = NULL;
+	OMR::JitBuilder::IlBuilder *isDoublePath = generateILForDoubleOps(builder, &failInline);
 
-	TR::IlBuilder *thenPath = NULL;
-	TR::IlBuilder *elsePath = NULL;
+	OMR::JitBuilder::IlBuilder *thenPath = NULL;
+	OMR::JitBuilder::IlBuilder *elsePath = NULL;
 	isDoublePath->IfThenElse(&thenPath, &elsePath,
 	isDoublePath->	EqualTo(
 	isDoublePath->		Load("leftValueDouble"),
@@ -1916,14 +1914,14 @@ SOMppMethod::generateILForDoubleEqual(TR::BytecodeBuilder *builder)
 	return failInline;
 }
 
-TR::IlBuilder *
-SOMppMethod::generateILForDoubleNotEqual(TR::BytecodeBuilder *builder)
+OMR::JitBuilder::IlBuilder *
+SOMppMethod::generateILForDoubleNotEqual(OMR::JitBuilder::BytecodeBuilder *builder)
 {
-	TR::IlBuilder *failInline = NULL;
-	TR::IlBuilder *isDoublePath = generateILForDoubleOps(builder, &failInline);
+	OMR::JitBuilder::IlBuilder *failInline = NULL;
+	OMR::JitBuilder::IlBuilder *isDoublePath = generateILForDoubleOps(builder, &failInline);
 
-	TR::IlBuilder *thenPath = NULL;
-	TR::IlBuilder *elsePath = NULL;
+	OMR::JitBuilder::IlBuilder *thenPath = NULL;
+	OMR::JitBuilder::IlBuilder *elsePath = NULL;
 	isDoublePath->IfThenElse(&thenPath, &elsePath,
 	isDoublePath->	EqualTo(
 	isDoublePath->		Load("leftValueDouble"),
@@ -1944,11 +1942,11 @@ SOMppMethod::generateILForDoubleNotEqual(TR::BytecodeBuilder *builder)
 	return failInline;
 }
 
-TR::IlBuilder *
-SOMppMethod::generateILForDoublePlus(TR::BytecodeBuilder *builder)
+OMR::JitBuilder::IlBuilder *
+SOMppMethod::generateILForDoublePlus(OMR::JitBuilder::BytecodeBuilder *builder)
 {
-	TR::IlBuilder *failInline = NULL;
-	TR::IlBuilder *isDoublePath = generateILForDoubleOps(builder, &failInline);
+	OMR::JitBuilder::IlBuilder *failInline = NULL;
+	OMR::JitBuilder::IlBuilder *isDoublePath = generateILForDoubleOps(builder, &failInline);
 
 	isDoublePath->StoreAt(
 	isDoublePath->	ConvertTo(pInt64,
@@ -1961,11 +1959,11 @@ SOMppMethod::generateILForDoublePlus(TR::BytecodeBuilder *builder)
 	return failInline;
 }
 
-TR::IlBuilder *
-SOMppMethod::generateILForDoubleMinus(TR::BytecodeBuilder *builder)
+OMR::JitBuilder::IlBuilder *
+SOMppMethod::generateILForDoubleMinus(OMR::JitBuilder::BytecodeBuilder *builder)
 {
-	TR::IlBuilder *failInline = NULL;
-	TR::IlBuilder *isDoublePath = generateILForDoubleOps(builder, &failInline);
+	OMR::JitBuilder::IlBuilder *failInline = NULL;
+	OMR::JitBuilder::IlBuilder *isDoublePath = generateILForDoubleOps(builder, &failInline);
 
 	isDoublePath->StoreAt(
 	isDoublePath->	ConvertTo(pInt64,
@@ -1978,11 +1976,11 @@ SOMppMethod::generateILForDoubleMinus(TR::BytecodeBuilder *builder)
 	return failInline;
 }
 
-TR::IlBuilder *
-SOMppMethod::generateILForDoubleStar(TR::BytecodeBuilder *builder)
+OMR::JitBuilder::IlBuilder *
+SOMppMethod::generateILForDoubleStar(OMR::JitBuilder::BytecodeBuilder *builder)
 {
-	TR::IlBuilder *failInline = NULL;
-	TR::IlBuilder *isDoublePath = generateILForDoubleOps(builder, &failInline);
+	OMR::JitBuilder::IlBuilder *failInline = NULL;
+	OMR::JitBuilder::IlBuilder *isDoublePath = generateILForDoubleOps(builder, &failInline);
 
 	isDoublePath->StoreAt(
 	isDoublePath->	ConvertTo(pInt64,
@@ -1995,11 +1993,11 @@ SOMppMethod::generateILForDoubleStar(TR::BytecodeBuilder *builder)
 	return failInline;
 }
 
-TR::IlBuilder *
-SOMppMethod::generateILForDoubleSlashSlash(TR::BytecodeBuilder *builder)
+OMR::JitBuilder::IlBuilder *
+SOMppMethod::generateILForDoubleSlashSlash(OMR::JitBuilder::BytecodeBuilder *builder)
 {
-	TR::IlBuilder *failInline = NULL;
-	TR::IlBuilder *isDoublePath = generateILForDoubleOps(builder, &failInline);
+	OMR::JitBuilder::IlBuilder *failInline = NULL;
+	OMR::JitBuilder::IlBuilder *isDoublePath = generateILForDoubleOps(builder, &failInline);
 
 	isDoublePath->StoreAt(
 	isDoublePath->	ConvertTo(pInt64,
@@ -2012,12 +2010,12 @@ SOMppMethod::generateILForDoubleSlashSlash(TR::BytecodeBuilder *builder)
 	return failInline;
 }
 
-TR::IlBuilder *
-SOMppMethod::doInlineIfPossible(TR::BytecodeBuilder *builder, VMSymbol* signature, long bytecodeIndex)
+OMR::JitBuilder::IlBuilder *
+SOMppMethod::doInlineIfPossible(OMR::JitBuilder::BytecodeBuilder *builder, VMSymbol* signature, long bytecodeIndex)
 {
 	VMClass *receiverFromCache = method->getInvokeReceiverCache(bytecodeIndex);
 	char *signatureChars = signature->GetChars();
-	TR::IlBuilder *genericSend = builder;
+	OMR::JitBuilder::IlBuilder *genericSend = builder;
 
 #if SOM_METHOD_DEBUG
 	bool didInline = false;
@@ -2054,8 +2052,8 @@ SOMppMethod::doInlineIfPossible(TR::BytecodeBuilder *builder, VMSymbol* signatur
 	return genericSend;
 }
 
-TR::IlBuilder *
-SOMppMethod::generateRecognizedMethod(TR::BytecodeBuilder *builder, VMClass *receiverFromCache, char *signatureChars)
+OMR::JitBuilder::IlBuilder *
+SOMppMethod::generateRecognizedMethod(OMR::JitBuilder::BytecodeBuilder *builder, VMClass *receiverFromCache, char *signatureChars)
 {
 	if ((VMClass*)integerClass == receiverFromCache) {
 		if (0 == strcmp("<", signatureChars)) {
@@ -2130,11 +2128,11 @@ SOMppMethod::generateRecognizedMethod(TR::BytecodeBuilder *builder, VMClass *rec
 	return builder;
 }
 
-TR::IlBuilder *
-SOMppMethod::generateGenericInline(TR::BytecodeBuilder *builder, VMClass *receiverFromCache, VMMethod *vmMethod, char *signatureChars)
+OMR::JitBuilder::IlBuilder *
+SOMppMethod::generateGenericInline(OMR::JitBuilder::BytecodeBuilder *builder, VMClass *receiverFromCache, VMMethod *vmMethod, char *signatureChars)
 {
-	TR::BytecodeBuilder *initialBilder = builder;
-	TR::IlBuilder *fail = nullptr;
+	OMR::JitBuilder::BytecodeBuilder *initialBilder = builder;
+	OMR::JitBuilder::IlBuilder *fail = nullptr;
 
 	/* check to see if there is room on the current stack to execute the method */
 	/* spaceAvailable = # of stack slots in the current method - current depth + # of arguments for the method to inline */
@@ -2142,7 +2140,7 @@ SOMppMethod::generateGenericInline(TR::BytecodeBuilder *builder, VMClass *receiv
 	long spaceAvailable = method->GetMaximumNumberOfStackElements() - currentStackDepth + methodToInlineNumberOfArguments;
 	if (vmMethod->GetMaximumNumberOfStackElements() <= spaceAvailable) {
 		if (methodIsInlineable(vmMethod)) {
-			TR::IlBuilder *inlineBuilder = nullptr;
+			OMR::JitBuilder::IlBuilder *inlineBuilder = nullptr;
 			/* TODO if debug mode gen code to ensure stack has room at runtime */
 
 			/* make sure the receiver class is the right one */
@@ -2188,7 +2186,7 @@ SOMppMethod::generateGenericInline(TR::BytecodeBuilder *builder, VMClass *receiv
 				{
 					uint8_t fieldIndex = vmMethod->GetBytecode(bytecodeIndex + 1);
 
-					TR::IlValue *fieldValue =
+					OMR::JitBuilder::IlValue *fieldValue =
 					inlineBuilder->Call("getFieldFrom", 2,
 					inlineBuilder->	Load("receiverObject"),
 					inlineBuilder->	ConstInt64((int64_t)fieldIndex));
@@ -2201,7 +2199,7 @@ SOMppMethod::generateGenericInline(TR::BytecodeBuilder *builder, VMClass *receiv
 				{
 					uint8_t valueOffset = vmMethod->GetBytecode(bytecodeIndex + 1);
 
-					TR::IlValue *constant =
+					OMR::JitBuilder::IlValue *constant =
 					inlineBuilder->LoadAt(pInt64,
 					inlineBuilder->	IndexAt(pInt64,
 					inlineBuilder->		ConvertTo(pInt64,
@@ -2216,7 +2214,7 @@ SOMppMethod::generateGenericInline(TR::BytecodeBuilder *builder, VMClass *receiv
 				{
 					VMSymbol* globalName = static_cast<VMSymbol*>(vmMethod->GetConstant(bytecodeIndex));
 
-					TR::IlValue *global =
+					OMR::JitBuilder::IlValue *global =
 					inlineBuilder->Call("getGlobal", 1,
 					inlineBuilder->	ConstInt64((int64_t)globalName));
 
@@ -2228,7 +2226,7 @@ SOMppMethod::generateGenericInline(TR::BytecodeBuilder *builder, VMClass *receiv
 				{
 					uint8_t argumentIndex = vmMethod->GetBytecode(bytecodeIndex + 1);
 
-					TR::IlValue *argument =
+					OMR::JitBuilder::IlValue *argument =
 					inlineBuilder->LoadAt(pInt64,
 					inlineBuilder->	IndexAt(pInt64,
 					inlineBuilder->		Load("argumentsArray"),
@@ -2246,7 +2244,7 @@ SOMppMethod::generateGenericInline(TR::BytecodeBuilder *builder, VMClass *receiv
 				{
 					uint8_t fieldIndex = vmMethod->GetBytecode(bytecodeIndex + 1);
 
-					TR::IlValue *value = peek(inlineBuilder);
+					OMR::JitBuilder::IlValue *value = peek(inlineBuilder);
 					pop(inlineBuilder);
 
 					inlineBuilder->Call("setFieldTo", 3,
@@ -2257,7 +2255,7 @@ SOMppMethod::generateGenericInline(TR::BytecodeBuilder *builder, VMClass *receiv
 				}
 				case BC_RETURN_LOCAL:
 				{
-					TR::IlValue *returnValue = peek(inlineBuilder);
+					OMR::JitBuilder::IlValue *returnValue = peek(inlineBuilder);
 
 					/* store the return value */
 					inlineBuilder->StoreAt(

@@ -19,7 +19,7 @@
 #ifndef SOMPPMETHOD_INCL
 #define SOMPPMETHOD_INCL
 
-#include "ilgen/MethodBuilder.hpp"
+#include "JitBuilder.hpp"
 #include "ilgen/VirtualMachineOperandStack.hpp"
 #include "ilgen/VirtualMachineRegisterInStruct.hpp"
 
@@ -39,19 +39,19 @@ typedef int64_t (SOMppFunctionType)(int64_t interpreter, int64_t frame);
 #define STACKVALUEILTYPE Int64
 #define	STACKVALUETYPE int64_t
 
-class SOMppMethod: public TR::MethodBuilder {
+class SOMppMethod: public OMR::JitBuilder::MethodBuilder {
 public:
-	SOMppMethod(TR::TypeDictionary *types, VMMethod *vmMethod, bool inlineCalls);
+	SOMppMethod(OMR::JitBuilder::TypeDictionary *types, VMMethod *vmMethod, bool inlineCalls);
 	virtual bool buildIL();
 protected:
-	TR::IlType *pInt64;
-	TR::IlType *pDouble;
-	TR::IlType *vmFrame;
-	TR::IlType *pVMFrame;
-	TR::IlType *vmObject;
-	TR::IlType *valueType;
-	OMR::VirtualMachineOperandStack *stack;
-	OMR::VirtualMachineRegister *stackTop;
+	OMR::JitBuilder::IlType *pInt64;
+	OMR::JitBuilder::IlType *pDouble;
+	OMR::JitBuilder::IlType *vmFrame;
+	OMR::JitBuilder::IlType *pVMFrame;
+	OMR::JitBuilder::IlType *vmObject;
+        OMR::JitBuilder::IlType *valueType;
+	OMR::JitBuilder::VirtualMachineOperandStack *stack;
+	OMR::JitBuilder::VirtualMachineRegister *stackTop;
 	const char * fieldNames[FIELDNAMES_LENGTH];
 private:
 	VMMethod *method;
@@ -63,100 +63,100 @@ private:
 	char methodName[64];
 
 	void defineFunctions();
-	void defineStructures(TR::TypeDictionary *types);
+	void defineStructures(OMR::JitBuilder::TypeDictionary *types);
 	void defineLocals();
 	void defineParameters();
 
-	void defineVMFrameStructure(TR::TypeDictionary *types);
-	void defineVMObjectStructure(TR::TypeDictionary *types);
+	void defineVMFrameStructure(OMR::JitBuilder::TypeDictionary *types);
+	void defineVMObjectStructure(OMR::JitBuilder::TypeDictionary *types);
 
-	void justReturn(TR::IlBuilder *from);
+	void justReturn(OMR::JitBuilder::IlBuilder *from);
 
-	void createBuilderForBytecode(TR::BytecodeBuilder **bytecodeBuilderTable, uint8_t bytecode, int64_t bytecodeIndex);
+	void createBuilderForBytecode(OMR::JitBuilder::BytecodeBuilder **bytecodeBuilderTable, uint8_t bytecode, int64_t bytecodeIndex);
 	int64_t calculateBytecodeIndexForJump(long bytecodeIndex);
-	bool generateILForBytecode(TR::BytecodeBuilder **bytecodeBuilderTable, uint8_t bytecode, long bytecodeIndex);
+	bool generateILForBytecode(OMR::JitBuilder::BytecodeBuilder **bytecodeBuilderTable, uint8_t bytecode, long bytecodeIndex);
 
-	void doDup(TR::BytecodeBuilder *builder);
-	void doPushLocal(TR::BytecodeBuilder *builder, long bytecodeIndex);
-	void doPushArgument(TR::BytecodeBuilder *builder, long bytecodeIndex);
-	void doPushField(TR::BytecodeBuilder *builder, VMMethod *currentMethod, long bytecodeIndex);
-	void doPushBlock(TR::BytecodeBuilder *builder, long bytecodeIndex);
-	void doPushConstant(TR::BytecodeBuilder *builder, long bytecodeIndex);
-	void doPushGlobal(TR::BytecodeBuilder *builder, long bytecodeIndex);
-	void doPop(TR::BytecodeBuilder *builder);
-	void doPopLocal(TR::BytecodeBuilder *builder, long bytecodeIndex);
-	void doPopArgument(TR::BytecodeBuilder *builder, long bytecodeIndex);
-	void doPopField(TR::BytecodeBuilder *builder, long bytecodeIndex);
-	void doSend(TR::BytecodeBuilder *builder, TR::BytecodeBuilder **bytecodeBuilderTable, long bytecodeIndex);
-	void doSuperSend(TR::BytecodeBuilder *builder, TR::BytecodeBuilder **bytecodeBuilderTable, long bytecodeIndex);
-	void doReturnLocal(TR::BytecodeBuilder *builder, long bytecodeIndex);
-	void doReturnNonLocal(TR::BytecodeBuilder *builder, long bytecodeIndex);
-	void doJumpIfFalse(TR::BytecodeBuilder *builder, TR::BytecodeBuilder **bytecodeBuilderTable, long bytecodeIndex);
-	void doJumpIfTrue(TR::BytecodeBuilder *builder, TR::BytecodeBuilder **bytecodeBuilderTable, long bytecodeIndex);
-	void doJump(TR::BytecodeBuilder *builder, TR::BytecodeBuilder **bytecodeBuilderTable, long bytecodeIndex);
+	void doDup(OMR::JitBuilder::BytecodeBuilder *builder);
+	void doPushLocal(OMR::JitBuilder::BytecodeBuilder *builder, long bytecodeIndex);
+	void doPushArgument(OMR::JitBuilder::BytecodeBuilder *builder, long bytecodeIndex);
+	void doPushField(OMR::JitBuilder::BytecodeBuilder *builder, VMMethod *currentMethod, long bytecodeIndex);
+	void doPushBlock(OMR::JitBuilder::BytecodeBuilder *builder, long bytecodeIndex);
+	void doPushConstant(OMR::JitBuilder::BytecodeBuilder *builder, long bytecodeIndex);
+	void doPushGlobal(OMR::JitBuilder::BytecodeBuilder *builder, long bytecodeIndex);
+	void doPop(OMR::JitBuilder::BytecodeBuilder *builder);
+	void doPopLocal(OMR::JitBuilder::BytecodeBuilder *builder, long bytecodeIndex);
+	void doPopArgument(OMR::JitBuilder::BytecodeBuilder *builder, long bytecodeIndex);
+	void doPopField(OMR::JitBuilder::BytecodeBuilder *builder, long bytecodeIndex);
+	void doSend(OMR::JitBuilder::BytecodeBuilder *builder, OMR::JitBuilder::BytecodeBuilder **bytecodeBuilderTable, long bytecodeIndex);
+	void doSuperSend(OMR::JitBuilder::BytecodeBuilder *builder, OMR::JitBuilder::BytecodeBuilder **bytecodeBuilderTable, long bytecodeIndex);
+	void doReturnLocal(OMR::JitBuilder::BytecodeBuilder *builder, long bytecodeIndex);
+	void doReturnNonLocal(OMR::JitBuilder::BytecodeBuilder *builder, long bytecodeIndex);
+	void doJumpIfFalse(OMR::JitBuilder::BytecodeBuilder *builder, OMR::JitBuilder::BytecodeBuilder **bytecodeBuilderTable, long bytecodeIndex);
+	void doJumpIfTrue(OMR::JitBuilder::BytecodeBuilder *builder, OMR::JitBuilder::BytecodeBuilder **bytecodeBuilderTable, long bytecodeIndex);
+	void doJump(OMR::JitBuilder::BytecodeBuilder *builder, OMR::JitBuilder::BytecodeBuilder **bytecodeBuilderTable, long bytecodeIndex);
 
-	TR::IlValue *peek(TR::IlBuilder *builder);
-	void pop(TR::IlBuilder *builder);
-	void push(TR::IlBuilder *builder, TR::IlValue *value);
-	const char *getContext(TR::IlBuilder *builder, uint8_t level);
-	TR::IlValue *getOuterContext(TR::IlBuilder *builder);
-	TR::IlValue *getSelfFromContext(TR::IlBuilder *builder, TR::IlValue *context);
-	int getReceiverForSend(TR::IlBuilder *builder, VMSymbol* signature);
-	TR::IlValue *getNumberOfIndexableFields(TR::IlBuilder *builder, TR::IlValue *array);
-	void getIndexableFieldSlot(TR::IlBuilder *builder, TR::IlValue *array);
+	OMR::JitBuilder::IlValue *peek(OMR::JitBuilder::IlBuilder *builder);
+	void pop(OMR::JitBuilder::IlBuilder *builder);
+	void push(OMR::JitBuilder::IlBuilder *builder, OMR::JitBuilder::IlValue *value);
+	const char *getContext(OMR::JitBuilder::IlBuilder *builder, uint8_t level);
+	OMR::JitBuilder::IlValue *getOuterContext(OMR::JitBuilder::IlBuilder *builder);
+	OMR::JitBuilder::IlValue *getSelfFromContext(OMR::JitBuilder::IlBuilder *builder, OMR::JitBuilder::IlValue *context);
+	int getReceiverForSend(OMR::JitBuilder::IlBuilder *builder, VMSymbol* signature);
+	OMR::JitBuilder::IlValue *getNumberOfIndexableFields(OMR::JitBuilder::IlBuilder *builder, OMR::JitBuilder::IlValue *array);
+	void getIndexableFieldSlot(OMR::JitBuilder::IlBuilder *builder, OMR::JitBuilder::IlValue *array);
 
-	TR::IlBuilder *doInlineIfPossible(TR::BytecodeBuilder *builder, VMSymbol* signature, long bytecodeIndex);
-	TR::IlBuilder *generateRecognizedMethod(TR::BytecodeBuilder *builder, VMClass *receiverFromCache, char *signatureChars);
-	TR::IlBuilder *generateGenericInline(TR::BytecodeBuilder *builder, VMClass *receiverFromCache, VMMethod *vmMethod, char *signatureChars);
+	OMR::JitBuilder::IlBuilder *doInlineIfPossible(OMR::JitBuilder::BytecodeBuilder *builder, VMSymbol* signature, long bytecodeIndex);
+	OMR::JitBuilder::IlBuilder *generateRecognizedMethod(OMR::JitBuilder::BytecodeBuilder *builder, VMClass *receiverFromCache, char *signatureChars);
+	OMR::JitBuilder::IlBuilder *generateGenericInline(OMR::JitBuilder::BytecodeBuilder *builder, VMClass *receiverFromCache, VMMethod *vmMethod, char *signatureChars);
 	bool methodIsInlineable(VMMethod *vmMethod);
 
 	/* Generate IL for primitives and known simple methods */
 	/* Integer methods */
-	TR::IlBuilder *generateILForIntergerOps(TR::BytecodeBuilder *builder, TR::IlBuilder **failPath);
-	TR::IlBuilder *verifyIntegerObject(TR::IlBuilder *builder, TR::IlValue *object, TR::IlBuilder **failPath);
-	TR::IlBuilder *getIntegerValue(TR::IlBuilder *builder, TR::IlValue *object, const char *valueName, TR::IlBuilder **failPath);
-	void createNewInteger(TR::IlBuilder *builder, TR::IlValue *integerValue);
+	OMR::JitBuilder::IlBuilder *generateILForIntergerOps(OMR::JitBuilder::BytecodeBuilder *builder, OMR::JitBuilder::IlBuilder **failPath);
+	OMR::JitBuilder::IlBuilder *verifyIntegerObject(OMR::JitBuilder::IlBuilder *builder, OMR::JitBuilder::IlValue *object, OMR::JitBuilder::IlBuilder **failPath);
+	OMR::JitBuilder::IlBuilder *getIntegerValue(OMR::JitBuilder::IlBuilder *builder, OMR::JitBuilder::IlValue *object, const char *valueName, OMR::JitBuilder::IlBuilder **failPath);
+	void createNewInteger(OMR::JitBuilder::IlBuilder *builder, OMR::JitBuilder::IlValue *integerValue);
 
-	TR::IlBuilder *generateILForIntegerLessThan(TR::BytecodeBuilder *builder);
-	TR::IlBuilder *generateILForIntegerLessThanEqual(TR::BytecodeBuilder *builder);
-	TR::IlBuilder *generateILForIntegerGreaterThan(TR::BytecodeBuilder *builder);
-	TR::IlBuilder *generateILForIntegerGreaterThanEqual(TR::BytecodeBuilder *builder);
-	TR::IlBuilder *generateILForIntegerEqual(TR::BytecodeBuilder *builder);
-	TR::IlBuilder *generateILForIntegerNotEqual(TR::BytecodeBuilder *builder);
-	TR::IlBuilder *generateILForIntegerPlus(TR::BytecodeBuilder *builder);
-	TR::IlBuilder *generateILForIntegerMinus(TR::BytecodeBuilder *builder);
-	TR::IlBuilder *generateILForIntegerStar(TR::BytecodeBuilder *builder);
-	TR::IlBuilder *generateILForIntegerPercent(TR::BytecodeBuilder *builder);
-	TR::IlBuilder *generateILForIntegerValue(TR::BytecodeBuilder *builder);
-	TR::IlBuilder *generateILForIntegerMax(TR::BytecodeBuilder *builder);
-	TR::IlBuilder *generateILForIntegerNegated(TR::BytecodeBuilder *builder);
-	TR::IlBuilder *generateILForIntegerAbs(TR::BytecodeBuilder *builder);
+	OMR::JitBuilder::IlBuilder *generateILForIntegerLessThan(OMR::JitBuilder::BytecodeBuilder *builder);
+	OMR::JitBuilder::IlBuilder *generateILForIntegerLessThanEqual(OMR::JitBuilder::BytecodeBuilder *builder);
+	OMR::JitBuilder::IlBuilder *generateILForIntegerGreaterThan(OMR::JitBuilder::BytecodeBuilder *builder);
+	OMR::JitBuilder::IlBuilder *generateILForIntegerGreaterThanEqual(OMR::JitBuilder::BytecodeBuilder *builder);
+	OMR::JitBuilder::IlBuilder *generateILForIntegerEqual(OMR::JitBuilder::BytecodeBuilder *builder);
+	OMR::JitBuilder::IlBuilder *generateILForIntegerNotEqual(OMR::JitBuilder::BytecodeBuilder *builder);
+	OMR::JitBuilder::IlBuilder *generateILForIntegerPlus(OMR::JitBuilder::BytecodeBuilder *builder);
+	OMR::JitBuilder::IlBuilder *generateILForIntegerMinus(OMR::JitBuilder::BytecodeBuilder *builder);
+	OMR::JitBuilder::IlBuilder *generateILForIntegerStar(OMR::JitBuilder::BytecodeBuilder *builder);
+	OMR::JitBuilder::IlBuilder *generateILForIntegerPercent(OMR::JitBuilder::BytecodeBuilder *builder);
+	OMR::JitBuilder::IlBuilder *generateILForIntegerValue(OMR::JitBuilder::BytecodeBuilder *builder);
+	OMR::JitBuilder::IlBuilder *generateILForIntegerMax(OMR::JitBuilder::BytecodeBuilder *builder);
+	OMR::JitBuilder::IlBuilder *generateILForIntegerNegated(OMR::JitBuilder::BytecodeBuilder *builder);
+	OMR::JitBuilder::IlBuilder *generateILForIntegerAbs(OMR::JitBuilder::BytecodeBuilder *builder);
 
 	/* Array methods */
-	TR::IlBuilder *generateILForArrayAt(TR::BytecodeBuilder *builder);
-	TR::IlBuilder *generateILForArrayAtPut(TR::BytecodeBuilder *builder);
-	TR::IlBuilder *generateILForArrayLength(TR::BytecodeBuilder *builder);
+	OMR::JitBuilder::IlBuilder *generateILForArrayAt(OMR::JitBuilder::BytecodeBuilder *builder);
+	OMR::JitBuilder::IlBuilder *generateILForArrayAtPut(OMR::JitBuilder::BytecodeBuilder *builder);
+	OMR::JitBuilder::IlBuilder *generateILForArrayLength(OMR::JitBuilder::BytecodeBuilder *builder);
 
 	/* Nil methods */
-	TR::IlBuilder *generateILForNilisNil(TR::BytecodeBuilder *builder);
+	OMR::JitBuilder::IlBuilder *generateILForNilisNil(OMR::JitBuilder::BytecodeBuilder *builder);
 
 	/* Boolean methods */
-	TR::IlBuilder *generateILForBooleanNot(TR::BytecodeBuilder *builder);
-	TR::IlBuilder *generateILForBooleanAnd(TR::BytecodeBuilder *builder);
-	TR::IlBuilder *generateILForBooleanOr(TR::BytecodeBuilder *builder);
+	OMR::JitBuilder::IlBuilder *generateILForBooleanNot(OMR::JitBuilder::BytecodeBuilder *builder);
+	OMR::JitBuilder::IlBuilder *generateILForBooleanAnd(OMR::JitBuilder::BytecodeBuilder *builder);
+	OMR::JitBuilder::IlBuilder *generateILForBooleanOr(OMR::JitBuilder::BytecodeBuilder *builder);
 
 	/* Integer methods */
-	TR::IlBuilder *generateILForDoubleOps(TR::BytecodeBuilder *builder, TR::IlBuilder **failPath);
-	TR::IlBuilder *generateILForDoubleLessThan(TR::BytecodeBuilder *builder);
-	TR::IlBuilder *generateILForDoubleLessThanEqual(TR::BytecodeBuilder *builder);
-	TR::IlBuilder *generateILForDoubleGreaterThan(TR::BytecodeBuilder *builder);
-	TR::IlBuilder *generateILForDoubleGreaterThanEqual(TR::BytecodeBuilder *builder);
-	TR::IlBuilder *generateILForDoubleEqual(TR::BytecodeBuilder *builder);
-	TR::IlBuilder *generateILForDoubleNotEqual(TR::BytecodeBuilder *builder);
-	TR::IlBuilder *generateILForDoublePlus(TR::BytecodeBuilder *builder);
-	TR::IlBuilder *generateILForDoubleMinus(TR::BytecodeBuilder *builder);
-	TR::IlBuilder *generateILForDoubleStar(TR::BytecodeBuilder *builder);
-	TR::IlBuilder *generateILForDoubleSlashSlash(TR::BytecodeBuilder *builder);
+	OMR::JitBuilder::IlBuilder *generateILForDoubleOps(OMR::JitBuilder::BytecodeBuilder *builder, OMR::JitBuilder::IlBuilder **failPath);
+	OMR::JitBuilder::IlBuilder *generateILForDoubleLessThan(OMR::JitBuilder::BytecodeBuilder *builder);
+	OMR::JitBuilder::IlBuilder *generateILForDoubleLessThanEqual(OMR::JitBuilder::BytecodeBuilder *builder);
+	OMR::JitBuilder::IlBuilder *generateILForDoubleGreaterThan(OMR::JitBuilder::BytecodeBuilder *builder);
+	OMR::JitBuilder::IlBuilder *generateILForDoubleGreaterThanEqual(OMR::JitBuilder::BytecodeBuilder *builder);
+	OMR::JitBuilder::IlBuilder *generateILForDoubleEqual(OMR::JitBuilder::BytecodeBuilder *builder);
+	OMR::JitBuilder::IlBuilder *generateILForDoubleNotEqual(OMR::JitBuilder::BytecodeBuilder *builder);
+	OMR::JitBuilder::IlBuilder *generateILForDoublePlus(OMR::JitBuilder::BytecodeBuilder *builder);
+	OMR::JitBuilder::IlBuilder *generateILForDoubleMinus(OMR::JitBuilder::BytecodeBuilder *builder);
+	OMR::JitBuilder::IlBuilder *generateILForDoubleStar(OMR::JitBuilder::BytecodeBuilder *builder);
+	OMR::JitBuilder::IlBuilder *generateILForDoubleSlashSlash(OMR::JitBuilder::BytecodeBuilder *builder);
 };
 
 #endif // !defined(SOMPPMETHOD_INCL)
