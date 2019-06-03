@@ -114,7 +114,7 @@ set(OMR_INCLUDE "${CMAKE_CURRENT_SOURCE_DIR}/omr/compiler"
 		"${CMAKE_CURRENT_SOURCE_DIR}/omr/gc/stats"
                 "${CMAKE_CURRENT_SOURCE_DIR}/omr")
 
-add_definitions(-DDEFAULT_OMR_JIT -DGC_TYPE=OMR_GARBAGE_COLLECTION) # -DUSE_TAGGING=false -DCACHE_INTEGER=false)
+add_definitions(-DDEFAULT_OMR_JIT_ON=true -DGC_TYPE=OMR_GARBAGE_COLLECTION) # -DUSE_TAGGING=false -DCACHE_INTEGER=false)
 #  was OMR_GARBAGE_COLLECTION
 
 add_executable(som

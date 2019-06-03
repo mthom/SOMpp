@@ -61,6 +61,7 @@ private:
 
 template<class HEAP_T>
 inline HEAP_T* GetHeap() __attribute__ ((always_inline));
+
 template<class HEAP_T>
 HEAP_T* GetHeap() {
     return Heap<HEAP_T>::theHeap;
