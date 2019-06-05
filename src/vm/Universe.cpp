@@ -55,9 +55,11 @@
 #if GC_TYPE == OMR_GARBAGE_COLLECTION
 #include "JitBuilder.hpp"
 #include "ilgen/TypeDictionary.hpp"
-#include "../../omrglue/SOMppMethod.hpp"
+#include "../../omrglue/CollectorLanguageInterfaceImpl.hpp"
+#include "../../src/jit/SOMppMethod.hpp"
 #include "../../omr/include_core/omrvm.h"
 #include "../../omr/include_core/omrlinkedlist.h"
+#include "../../omrglue/MarkingDelegate.hpp"
 #endif
 
 #if CACHE_INTEGER
@@ -467,16 +469,16 @@ void Universe::initialize(long _argc, char** _argv) {
         Universe::ErrorPrint("Failed startup OMR\n");
         GetUniverse()->Quit(-1);
     }
-
-    /* Initialize root table */
-    vm->rootTable = hashTableNew(vm->omrVM->_runtime->_portLibrary, OMR_GET_CALLSITE(), 0, sizeof(RootEntry),
-				 0, 0, OMRMEM_CATEGORY_MM,
-				 rootTableHashFn, rootTableHashEqualFn, NULL, NULL);
-    
-    /* Initialize object table */
-    vm->objectTable = hashTableNew(vm->omrVM->_runtime->_portLibrary, OMR_GET_CALLSITE(), 0, sizeof(ObjectEntry),
-				   0, 0, OMRMEM_CATEGORY_MM,
-				   objectTableHashFn, objectTableHashEqualFn, NULL, NULL);
+//
+//    /* Initialize root table */
+//    vm->rootTable = hashTableNew(vm->omrVM->_runtime->_portLibrary, OMR_GET_CALLSITE(), 0, sizeof(RootEntry),
+//				 0, 0, OMRMEM_CATEGORY_MM,
+//				 rootTableHashFn, rootTableHashEqualFn, NULL, NULL);
+//    
+//    /* Initialize object table */
+//    vm->objectTable = hashTableNew(vm->omrVM->_runtime->_portLibrary, OMR_GET_CALLSITE(), 0, sizeof(ObjectEntry),
+//				   0, 0, OMRMEM_CATEGORY_MM,
+//				   objectTableHashFn, objectTableHashEqualFn, NULL, NULL);
     
     if (enableJIT) {
     	enableJIT = initializeJit();
@@ -495,7 +497,7 @@ void Universe::initialize(long _argc, char** _argv) {
     interpreter = new Interpreter();
 
 #if CACHE_INTEGER
-# warning is _store_ptr sufficient/correct here?
+    //# warning is _store_ptr sufficient/correct here?
     // create prebuilt integers
     for (long it = INT_CACHE_MIN_VALUE; it <= INT_CACHE_MAX_VALUE; ++it) {
         prebuildInts[(unsigned long)(it - INT_CACHE_MIN_VALUE)] = _store_ptr(new (GetHeap<HEAP_CLS>()) VMInteger(it));
@@ -531,7 +533,7 @@ void Universe::initialize(long _argc, char** _argv) {
 //
 //    hashTableAdd(vm->rootTable, entry);
 //#endif
-    
+      
     VMInvokable* initialize = load_ptr(systemClass)->LookupInvokable(
                                             SymbolForChars("initialize:"));
     initialize->Invoke(interpreter, bootstrapFrame);
@@ -671,7 +673,7 @@ Universe::~Universe() {
 VMObject* Universe::InitializeGlobals() {
     set_vt_to_null();
     
-# warning is _store_ptr sufficient?
+    //# warning is _store_ptr sufficient?
     
     //
     //allocate nil object
@@ -782,14 +784,14 @@ VMClass* Universe::GetBlockClassWithArgs(long numberOfArguments) {
     result->AddInstancePrimitive(new (GetHeap<HEAP_CLS>()) VMEvaluationPrimitive(numberOfArguments) );
 
     SetGlobal(name, result);
-# warning is _store_ptr sufficient here?
+    //# warning is _store_ptr sufficient here?
     blockClassesByNoOfArgs[numberOfArguments] = _store_ptr(result);
 
     return result;
 }
 
 vm_oop_t Universe::GetGlobal(VMSymbol* name) {
-    # warning is _store_ptr correct here? it relies on _store_ptr not to be really changed...
+  //    # warning is _store_ptr correct here? it relies on _store_ptr not to be really changed...
     auto it = globals.find(_store_ptr(name));
     if (it == globals.end()) {
         return nullptr;
@@ -799,7 +801,7 @@ vm_oop_t Universe::GetGlobal(VMSymbol* name) {
 }
 
 bool Universe::HasGlobal(VMSymbol* name) {
-    # warning is _store_ptr correct here? it relies on _store_ptr not to be really changed...
+  //    # warning is _store_ptr correct here? it relies on _store_ptr not to be really changed...
     auto it = globals.find(_store_ptr(name));
     if (it == globals.end()) {
         return false;
@@ -1002,7 +1004,7 @@ VMFrame* Universe::NewFrame(VMFrame* previousFrame, VMMethod* method) const {
     long additionalBytes = length * sizeof(VMObject*);
     result = new (GetHeap<HEAP_CLS>(), additionalBytes) VMFrame(length);
     result->clazz = nullptr;
-# warning I think _store_ptr is sufficient here, but...
+    //# warning I think _store_ptr is sufficient here, but...
     result->method        = _store_ptr(method);
     result->previousFrame = _store_ptr(previousFrame);
     result->ResetStackPointer();
@@ -1172,7 +1174,7 @@ VMSymbol* Universe::NewSymbol(const StdString& str) {
 
 VMSymbol* Universe::NewSymbol(const char* str) {
     VMSymbol* result = new (GetHeap<HEAP_CLS>(), PADDED_SIZE(strlen(str)+1)) VMSymbol(str);
-# warning is _store_ptr sufficient here?
+    //# warning is _store_ptr sufficient here?
     symbolsMap[str] = _store_ptr(result);
 
     LOG_ALLOCATION("VMSymbol", result->GetObjectSize());
@@ -1201,7 +1203,7 @@ VMSymbol* Universe::SymbolForChars(const char* str) {
 }
 
 void Universe::SetGlobal(VMSymbol* name, vm_oop_t val) {
-# warning is _store_ptr correct here? it relies on _store_ptr not to be really changed...
+  //# warning is _store_ptr correct here? it relies on _store_ptr not to be really changed...
     globals[_store_ptr(name)] = _store_ptr(val);
 }
 

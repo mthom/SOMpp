@@ -61,6 +61,10 @@ set(VM_INCLUDE "${CMAKE_CURRENT_SOURCE_DIR}/src/vm")
 set(VM_SRC "${VM_INCLUDE}/Shell.cpp"
            "${VM_INCLUDE}/Universe.cpp")
 
+set(JIT_INCLUDE "${CMAKE_CURRENT_SOURCE_DIR}/src/jit")
+	 
+set(JIT_SRC "${JIT_INCLUDE}/SOMppMethod.cpp")
+
 set(VM_OBJECTS_INCLUDE "${CMAKE_CURRENT_SOURCE_DIR}/src/vmobjects")
 
 set(VM_OBJECTS_SRC "${VM_OBJECTS_INCLUDE}/AbstractObject.cpp"
@@ -80,23 +84,25 @@ set(VM_OBJECTS_SRC "${VM_OBJECTS_INCLUDE}/AbstractObject.cpp"
 		   "${VM_OBJECTS_INCLUDE}/VMString.cpp"
 		   "${VM_OBJECTS_INCLUDE}/VMSymbol.cpp")
 
-set(OMR_GLUE_INCLUDE "${CMAKE_CURRENT_SOURCE_DIR}/omrglue")
+add_library(som_vm INTERFACE)
+		 
+target_sources(som_vm INTERFACE
+  "${INTERPRETER_SRC}" "${VM_OBJECTS_SRC}" "${VM_SRC}" "${MEMORY_SRC}" "${JIT_SRC}"
+  "${PRIMITIVES_CORE_SRC}"
+  "${PRIMITIVES_SRC}"
+  "${COMPILER_SRC}"
+  "${MISC_SRC}"
+)
 
-set(OMR_GLUE_SRC "${OMR_GLUE_INCLUDE}/BytecodeHelper.cpp"
-                 "${OMR_GLUE_INCLUDE}/CollectorLanguageInterfaceImpl.cpp"
-		 "${OMR_GLUE_INCLUDE}/CompactSchemeFixupObject.cpp"
-		 "${OMR_GLUE_INCLUDE}/ConfigurationLanguageInterfaceImpl.cpp"
-		 "${OMR_GLUE_INCLUDE}/EnvironmentLanguageInterfaceImpl.cpp"
-		 "${OMR_GLUE_INCLUDE}/FrequentObjectsStats.cpp"
-		 "${OMR_GLUE_INCLUDE}/FrequentObjectsStats.cpp"
-		 "${OMR_GLUE_INCLUDE}/LanguageVMGlue.c"
-		 "${OMR_GLUE_INCLUDE}/UtilGlue.c"
-		 "${OMR_GLUE_INCLUDE}/ObjectIterator.cpp"
-		 "${OMR_GLUE_INCLUDE}/ObjectModel.cpp"
-		 "${OMR_GLUE_INCLUDE}/Profiling.cpp"
-		 "${OMR_GLUE_INCLUDE}/SOMppMethod.cpp"
-		 "${OMR_GLUE_INCLUDE}/StartupManagerImpl.cpp"
-		 "${OMR_GLUE_INCLUDE}/VerboseManagerImpl.cpp")
+target_link_libraries(som_vm INTERFACE jitbuilder omrcore omrvmstartup)
+
+target_include_directories(som_vm INTERFACE
+  "${OMR_GLUE_INCLUDE}" "${OMR_INCLUDE}" "${INTERPRETER_INCLUDE}" "${JIT_INCLUDE}"
+  "${VM_INCLUDE}" "${VM_OBJECTS_INCLUDE}" "${MEMORY_INCLUDE}"
+  "${PRIMITIVES_CORE_INCLUDE}"
+  "${PRIMITIVES_INCLUDE}"
+  "${COMPILER_INCLUDE}"
+  "${MISC_INCLUDE}")
 
 set(OMR_INCLUDE "${CMAKE_CURRENT_SOURCE_DIR}/omr/compiler"
                 "${CMAKE_CURRENT_SOURCE_DIR}/omr/jitbuilder/release/include"
@@ -113,20 +119,48 @@ set(OMR_INCLUDE "${CMAKE_CURRENT_SOURCE_DIR}/omr/compiler"
 		"${CMAKE_CURRENT_SOURCE_DIR}/omrglue"
 		"${CMAKE_CURRENT_SOURCE_DIR}/omr/gc/stats"
                 "${CMAKE_CURRENT_SOURCE_DIR}/omr")
+		 
+set(OMR_GLUE_INCLUDE "${CMAKE_CURRENT_SOURCE_DIR}/omrglue")
+
+set(OMR_GLUE_SRC "${OMR_GLUE_INCLUDE}/BytecodeHelper.cpp"
+                 "${OMR_GLUE_INCLUDE}/CollectorLanguageInterfaceImpl.cpp"
+		 "${OMR_GLUE_INCLUDE}/CompactSchemeFixupObject.cpp"
+		 "${OMR_GLUE_INCLUDE}/ConfigurationLanguageInterfaceImpl.cpp"
+		 "${OMR_GLUE_INCLUDE}/EnvironmentDelegate.cpp"
+		 "${OMR_GLUE_INCLUDE}/EnvironmentLanguageInterfaceImpl.cpp"
+		 "${OMR_GLUE_INCLUDE}/FrequentObjectsStats.cpp"
+		 "${OMR_GLUE_INCLUDE}/FrequentObjectsStats.cpp"
+		 "${OMR_GLUE_INCLUDE}/GlobalCollectorDelegate.cpp"
+		 "${OMR_GLUE_INCLUDE}/LanguageVMGlue.c"
+		 "${OMR_GLUE_INCLUDE}/MarkingDelegate.cpp"
+		 "${OMR_GLUE_INCLUDE}/UtilGlue.c"
+		 "${OMR_GLUE_INCLUDE}/ObjectIterator.cpp"
+		 "${OMR_GLUE_INCLUDE}/ObjectModel.cpp"
+		 "${OMR_GLUE_INCLUDE}/Profiling.cpp"
+		 "${OMR_GLUE_INCLUDE}/StartupManagerImpl.cpp"
+		 "${OMR_GLUE_INCLUDE}/VerboseManagerImpl.cpp")
+	       
+add_library(omr_som_gc_glue INTERFACE)
+
+set(OMR_GC_GLUE_TARGET "omr_som_gc_glue" CACHE
+    STRING "The gc glue target, must be interface library" FORCE)
+
+target_sources(omr_som_gc_glue
+  INTERFACE
+    ${OMR_GLUE_SRC})
+
+target_link_libraries(omr_som_gc_glue
+  INTERFACE
+    omr_example_base
+    som_vm)
+
+target_include_directories(omr_som_gc_glue INTERFACE
+   "${OMR_GLUE_INCLUDE}" "${OMR_INCLUDE}" "${VM_INCLUDE}")
 
 add_definitions(-DDEFAULT_OMR_JIT_ON=true -DGC_TYPE=OMR_GARBAGE_COLLECTION) # -DUSE_TAGGING=false -DCACHE_INTEGER=false)
 #  was OMR_GARBAGE_COLLECTION
 
 add_executable(som
-               "${OMR_GLUE_SRC}"
-               "${PRIMITIVES_CORE_SRC}"
-               "${PRIMITIVES_SRC}"
-               "${INTERPRETER_SRC}"
-               "${COMPILER_SRC}"
-	       "${MEMORY_SRC}"
-	       "${MISC_SRC}"
-	       "${VM_SRC}"
-	       "${VM_OBJECTS_SRC}"
                "src/Main.cpp")
 
 target_include_directories(som PRIVATE ${VM_INCLUDE}
@@ -141,7 +175,4 @@ target_include_directories(som PRIVATE ${VM_INCLUDE}
 				       ${OMR_INCLUDE}
 				       src/)
 
-target_link_libraries(som omrcore omrgc omrvmstartup jitbuilder)
-
-#get_property(dirs DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY INCLUDE_DIRECTORIES)
-#message(STATUS "dir=${dirs}")
+target_link_libraries(som omr_som_gc_glue omrgc som_vm)
