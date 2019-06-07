@@ -211,7 +211,7 @@ SOMppMethod::defineVMFrameStructure(OMR::JitBuilder::TypeDictionary *types)
 	types->DefineField("VMFrame", "isJITFrame", Int64);
 	types->DefineField("VMFrame", "bytecodeIndex", Int64);
 	types->DefineField("VMFrame", "arguments", Int64);
-	types->DefineField("VMFrame", "locals", Int64);
+	types->DefineField("VMFrame", "locals", pInt64);
 	types->DefineField("VMFrame", "stack_ptr", pInt64);
 	types->CloseStruct("VMFrame");
 }
@@ -743,6 +743,8 @@ SOMppMethod::generateILForBytecode(OMR::JitBuilder::BytecodeBuilder **bytecodeBu
 		return false;
 	}
 
+	builder->setVMState(stackTop);
+	
 	OMR::JitBuilder::BytecodeBuilder *nextBytecodeBuilder = nullptr;
 	long nextBytecodeIndex = bytecodeIndex + Bytecode::GetBytecodeLength(bytecode);
 	long numOfBytecodes = method->GetNumberOfBytecodes();

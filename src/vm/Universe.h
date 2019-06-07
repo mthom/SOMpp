@@ -73,6 +73,9 @@ extern GCClass* systemClass;
 extern GCClass* blockClass;
 extern GCClass* doubleClass;
 
+#if GC_TYPE == OMR_GARBAGE_COLLECTION
+extern GCClass* booleanClass;
+#endif
 extern GCClass* trueClass;
 extern GCClass* falseClass;
 
@@ -107,6 +110,9 @@ public:
     VMBlock* NewBlock(VMMethod*, VMFrame*, long);
     VMClass* NewClass(VMClass*) const;
     VMFrame* NewFrame(VMFrame*, VMMethod*) const;
+#if GC_TYPE == OMR_GARBAGE_COLLECTION
+    VMFrame* NewJITFrame(VMFrame*, VMMethod*, vm_oop_t *args, vm_oop_t *locals, vm_oop_t *stack, long recLevel) const;
+#endif
     VMMethod* NewMethod(VMSymbol*, size_t, size_t) const;
     VMObject* NewInstance(VMClass*) const;
     VMInteger* NewInteger(int64_t) const;

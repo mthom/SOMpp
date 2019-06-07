@@ -97,6 +97,9 @@ GCClass* systemClass;
 GCClass* blockClass;
 GCClass* doubleClass;
 
+#if GC_TYPE == OMR_GARBAGE_COLLECTION
+GCClass* booleanClass;
+#endif
 GCClass* trueClass;
 GCClass* falseClass;
 
@@ -732,6 +735,10 @@ VMObject* Universe::InitializeGlobals() {
 
     blockClass = _store_ptr(LoadClass(SymbolForChars("Block")));
 
+#if GC_TYPE == OMR_GARBAGE_COLLECTION
+    booleanClass = _store_ptr(LoadClass(SymbolForChars("Boolean")));
+#endif
+
     VMSymbol* trueClassName = SymbolForChars("True");
     trueClass  = _store_ptr(LoadClass(trueClassName));
     trueObject = _store_ptr(NewInstance(load_ptr(trueClass)));
@@ -1013,6 +1020,19 @@ VMFrame* Universe::NewFrame(VMFrame* previousFrame, VMMethod* method) const {
     return result;
 }
 
+#if GC_TYPE == OMR_GARBAGE_COLLECTION
+VMFrame* Universe::NewJITFrame(VMFrame* previousFrame, VMMethod* method, vm_oop_t *args, vm_oop_t *locals, vm_oop_t *stack, long recLevel) const {
+    VMFrame* result = nullptr;
+
+    result = new (GetHeap<HEAP_CLS>(), 0) VMFrame(args, locals, stack, recLevel);
+    result->SetPreviousFrame(previousFrame);
+    result->SetMethod(method);
+
+    LOG_ALLOCATION("VMFrame", result->GetObjectSize());
+    return result;
+}
+#endif
+
 VMObject* Universe::NewInstance(VMClass* classOfInstance) const {
     long numOfFields = classOfInstance->GetNumberOfInstanceFields();
     //the additional space needed is calculated from the number of fields
@@ -1076,6 +1096,9 @@ void Universe::WalkGlobals(walk_heap_fn walk) {
     blockClass      = static_cast<GCClass*>(walk(blockClass));
     doubleClass     = static_cast<GCClass*>(walk(doubleClass));
     
+#if GC_TYPE == OMR_GARBAGE_COLLECTION
+    booleanClass  = static_cast<GCClass*>(walk(booleanClass));
+#endif
     trueClass  = static_cast<GCClass*>(walk(trueClass));
     falseClass = static_cast<GCClass*>(walk(falseClass));
 
