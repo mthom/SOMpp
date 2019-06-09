@@ -162,13 +162,8 @@ void VMMethod::Invoke(Interpreter* interp, VMFrame* frame) {
     VMFrame* frm = interp->PushNewFrame(this);
     frm->CopyArgumentsFrom(frame);
 #if GC_TYPE == OMR_GARBAGE_COLLECTION
-<<<<<<< HEAD
-    if(NULL != compiledMethod) {
-    	frm->SetIsJITFrame(true);
-=======
 	if(NULL != compiledMethod) {
 		frm->SetIsJITFrame(true);
->>>>>>> charlie-stream/jitbuilder_vmstate
 		compiledMethod((int64_t)interp, (int64_t)frm);
 	} else if (invokedCount > 0) {
 		if (0 == --invokedCount) {

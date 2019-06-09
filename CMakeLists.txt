@@ -63,7 +63,8 @@ set(VM_SRC "${VM_INCLUDE}/Shell.cpp"
 
 set(JIT_INCLUDE "${CMAKE_CURRENT_SOURCE_DIR}/src/jit")
 	 
-set(JIT_SRC "${JIT_INCLUDE}/SOMppMethod.cpp")
+set(JIT_SRC # "${JIT_INCLUDE}/SOMppMethod.cpp"
+            "${JIT_INCLUDE}/SOMppMethod_with_vm_state.cpp")
 
 set(VM_OBJECTS_INCLUDE "${CMAKE_CURRENT_SOURCE_DIR}/src/vmobjects")
 
