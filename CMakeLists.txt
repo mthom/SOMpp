@@ -1,8 +1,10 @@
 cmake_minimum_required (VERSION 2.8.11)
 project (SOMPP)
 
-set(CMAKE_PROJECT_ROOT ${CMAKE_CURRENT_SOURCE_DIR})
-set(CMAKE_CXX_STANDARD 14)
+# set(CMAKE_PROJECT_ROOT ${CMAKE_CURRENT_SOURCE_DIR})
+# set(CMAKE_CXX_STANDARD 14)
+
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIE -fstack-protector-all")
 
 add_subdirectory(omr)
 
