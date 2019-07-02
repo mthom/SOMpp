@@ -32,19 +32,32 @@
 #include "VMObject.h"
 
 class VMSymbol: public VMString {
-	friend class SOMppMethod;
+    friend class SOMppMethod;
 public:
     typedef GCSymbol Stored;
-    
+
     VMSymbol(const char* str);
     VMSymbol(const StdString& s);
     virtual StdString GetPlainString() const;
     virtual size_t GetObjectSize() const;
     virtual VMSymbol* Clone() const;
     virtual VMClass* GetClass() const;
-    
+
     virtual StdString AsDebugString() const;
-    
+
+    std::vector<fomrobject_t*> GetFieldPtrs() {
+      std::vector<fomrobject_t*> fields;
+
+      fields.push_back((fomrobject_t*) &cachedClass_invokable[0]);
+      fields.push_back((fomrobject_t*) &cachedClass_invokable[1]);
+      fields.push_back((fomrobject_t*) &cachedClass_invokable[2]);
+      fields.push_back((fomrobject_t*) &cachedInvokable[0]);
+      fields.push_back((fomrobject_t*) &cachedInvokable[1]);      
+      fields.push_back((fomrobject_t*) &cachedInvokable[2]);
+
+      return fields;
+    }
+
 private:
     const int numberOfArgumentsOfSignature;
     const GCClass* cachedClass_invokable[3];
@@ -52,9 +65,9 @@ private:
     GCInvokable* cachedInvokable[3];
     inline VMInvokable* GetCachedInvokable(const VMClass*) const;
     inline void UpdateCachedInvokable(const VMClass* cls, VMInvokable* invo);
-    
+
     virtual void WalkObjects(walk_heap_fn);
-    
+
     friend class Signature;
     friend class VMClass;
 };

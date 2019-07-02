@@ -48,7 +48,11 @@ public:
     
     virtual StdString AsDebugString() const;
 
-protected:
+    virtual std::vector<fomrobject_t*> GetFieldPtrs() {
+      return {};
+    }
+
+protected:    
     //this could be replaced by the CHARS macro in VMString.cpp
     //in order to decrease the object size
     char* chars;
