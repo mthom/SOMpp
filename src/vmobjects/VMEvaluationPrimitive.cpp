@@ -44,6 +44,7 @@
 
 VMEvaluationPrimitive::VMEvaluationPrimitive(long argc) : VMPrimitive(computeSignatureString(argc)) {
     SetRoutine(new EvaluationRoutine(this));
+
     SetEmpty(false);
     store_ptr(numberOfArguments, NEW_INT(argc));
 }
@@ -124,7 +125,7 @@ void EvaluationRoutine::Invoke(Interpreter* interp, VMFrame* frame) {
     VMMethod *vmMethod = block->GetMethod();
     if(NULL != vmMethod->compiledMethod) {
     	NewFrame->SetIsJITFrame(true);
-		vmMethod->compiledMethod((int64_t)interp, (int64_t)NewFrame);
+	vmMethod->compiledMethod((int64_t*)interp, NewFrame);
 	} else if (vmMethod->invokedCount > 0) {
         if (0 == --vmMethod->invokedCount) {
             if (enableJIT) {

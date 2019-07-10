@@ -33,11 +33,11 @@
 #include "VMInteger.h"
 #include "vm/Universe.h"
 
-//#if GC_TYPE == OMR_GARBAGE_COLLECTION
-//#include "../omrglue/SOMppMethod.hpp"
-//#endif
+#if GC_TYPE == OMR_GARBAGE_COLLECTION
+#include "../src/jit/SOMppMethod_with_vm_state.hpp"
+#endif
 
-typedef int64_t (SOMppFunctionType)(int64_t interpreter, int64_t frame);
+// typedef int64_t (SOMppFunctionType)(int64_t* interpreter, VMFrame* frame);
 
 class MethodGenerationContext;
 class Interpreter;

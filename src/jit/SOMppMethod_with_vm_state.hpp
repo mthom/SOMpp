@@ -19,6 +19,8 @@
 #ifndef SOMPPMETHOD_INCL
 #define SOMPPMETHOD_INCL
 
+#include "VMFrame.h"
+
 #include "JitBuilder.hpp"
 #include "VirtualMachineOperandStack.hpp"
 #include "VirtualMachineRegisterInStruct.hpp"
@@ -31,7 +33,7 @@ class VMMethod;
 class VMSymbol;
 class VMClass;
 class VMInvokable;
-typedef int64_t (SOMppFunctionType)(int64_t interpreter, int64_t frame);
+typedef int64_t (SOMppFunctionType)(int64_t* interpreter, VMFrame* frame);
 
 
 typedef OMR::JitBuilder::IlValue * (*MathFuncType)(OMR::JitBuilder::BytecodeBuilder *builder, OMR::JitBuilder::IlValue *param1, OMR::JitBuilder::IlValue *param2);
@@ -40,7 +42,7 @@ typedef void (*ForLoopFuncType)(OMR::JitBuilder::BytecodeBuilder *builder, const
 
 #define FIELDNAMES_LENGTH 10
 #define STACKVALUEILTYPE pInt64
-#define	STACKVALUETYPE int64_t
+#define	STACKVALUETYPE int64_t*
 
 #define MAX_RECURSIVE_INLINING_DEPTH 4
 
@@ -106,10 +108,12 @@ public:
 	virtual bool buildIL();
 protected:
 	OMR::JitBuilder::IlType *pInt64;
+        OMR::JitBuilder::IlType *ppInt64;
 	OMR::JitBuilder::IlType *pDouble;
 	OMR::JitBuilder::IlType *vmFrame;
 	OMR::JitBuilder::IlType *pVMFrame;
 	OMR::JitBuilder::IlType *vmObject;
+        OMR::JitBuilder::IlType *pVMObject;
 	OMR::JitBuilder::IlType *valueType;
 	OMR::JitBuilder::VirtualMachineOperandStack *stack;
 	OMR::JitBuilder::VirtualMachineRegister *stackTop;

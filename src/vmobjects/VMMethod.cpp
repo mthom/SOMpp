@@ -153,8 +153,8 @@ void VMMethod::Invoke(Interpreter* interp, VMFrame* frame) {
     frm->CopyArgumentsFrom(frame);
 #if GC_TYPE == OMR_GARBAGE_COLLECTION
 	if(NULL != compiledMethod) {
-		frm->SetIsJITFrame(true);
-		compiledMethod((int64_t)interp, (int64_t)frm);
+	  frm->SetIsJITFrame(true);
+	  compiledMethod((int64_t*)interp, frm);
 	} else if (invokedCount > 0) {
 		if (0 == --invokedCount) {
 			if (enableJIT) {

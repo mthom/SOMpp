@@ -60,7 +60,7 @@
 #define LINETOSTR(x) TOSTR(x)
 
 int64_t
-BytecodeHelper::getClass(int64_t object)
+BytecodeHelper::getClass(int64_t* object)
 {
 #define VALUE_FOR_GET_CLASS_LINE LINETOSTR(__LINE__)
 	VMClass *clazz = CLASS_OF(object);
@@ -78,20 +78,19 @@ BytecodeHelper::getSuperClass(int64_t object)
 	return (int64_t)clazz->GetSuperClass();
 }
 
-int64_t
+int64_t*
 BytecodeHelper::getGlobal(int64_t symbol)
 {
 #define VALUE_FOR_GET_GLOBAL_LINE LINETOSTR(__LINE__)
 	//fprintf(stderr, "get global type %p\n", symbol);
-	return (int64_t)GetUniverse()->GetGlobal((VMSymbol*)symbol);
+	return (int64_t*)GetUniverse()->GetGlobal((VMSymbol*)symbol);
 }
 
 int64_t
-BytecodeHelper::getNewBlock(int64_t framePtr, int64_t blockMethod, int64_t numOfArgs)
+BytecodeHelper::getNewBlock(VMFrame* frame, int64_t blockMethod, int64_t numOfArgs)
 {
 #define VALUE_FOR_GET_NEW_BLOCK_LINE LINETOSTR(__LINE__)
 
-	VMFrame *frame = (VMFrame *)framePtr;
 	//fprintf(stderr, "get new block %p\n", blockMethod);
 	return (int64_t)GetUniverse()->NewBlock((VMMethod*)blockMethod, frame, (long)numOfArgs);
 }
@@ -120,17 +119,17 @@ BytecodeHelper::newArray(int64_t value)
 	return (int64_t)GetUniverse()->NewArray((long)value);
 }
 
-int64_t
-BytecodeHelper::getFieldFrom(int64_t selfPtr, int64_t fieldIndex)
+int64_t*
+BytecodeHelper::getFieldFrom(VMObject* selfPtr, int64_t fieldIndex)
 {
 #define VALUE_FOR_GET_FIELD_FROM_LINE LINETOSTR(__LINE__)
 	//fprintf(stderr, "getfield\n");
-	vm_oop_t self = (vm_oop_t)selfPtr;
-	return (int64_t)((VMObject*)self)->GetField(fieldIndex);
+	//vm_oop_t self = (vm_oop_t)selfPtr;
+	return (int64_t*)selfPtr->GetField(fieldIndex);
 }
 
 void
-BytecodeHelper::setFieldTo(int64_t selfPtr, int64_t fieldIndex, int64_t valuePtr)
+BytecodeHelper::setFieldTo(int64_t selfPtr, int64_t fieldIndex, int64_t* valuePtr)
 {
 #define VALUE_FOR_SET_FIELD_TO_LINE LINETOSTR(__LINE__)
 	//fprintf(stderr, "set field\n");
@@ -140,7 +139,7 @@ BytecodeHelper::setFieldTo(int64_t selfPtr, int64_t fieldIndex, int64_t valuePtr
 }
 
 int64_t
-BytecodeHelper::getInvokable(int64_t receiverClazz, int64_t signature)
+BytecodeHelper::getInvokable(int64_t receiverClazz, int64_t* signature)
 {
 #define VALUE_FOR_GET_INVOKABLE_LINE LINETOSTR(__LINE__)
 	//fprintf(stderr, "getinvokable\n");
@@ -149,11 +148,10 @@ BytecodeHelper::getInvokable(int64_t receiverClazz, int64_t signature)
 }
 
 int64_t
-BytecodeHelper::doSendIfRequired(int64_t interp, int64_t framePtr, int64_t invokablePtr, int64_t receiverPtr, int64_t signaturePtr, int64_t bytecodeIndex)
+BytecodeHelper::doSendIfRequired(int64_t* interp, VMFrame* frame, int64_t invokablePtr, int64_t* receiverPtr, int64_t signaturePtr, int64_t bytecodeIndex)
 {
 #define VALUE_FOR_DO_SEND_IF_REQUIRED_LINE LINETOSTR(__LINE__)
 	//fprintf(stderr, "doSendIf REquired\n");
-	VMFrame *frame = (VMFrame *)framePtr;
 	VMInvokable *invokable = (VMInvokable *)invokablePtr;
 	Interpreter *interpreter = (Interpreter *)interp;
 	interpreter->setBytecodeIndexGlobal((long)bytecodeIndex);
@@ -300,8 +298,8 @@ BytecodeHelper::doInlineSendIfRequired(int64_t interp, int64_t framePtr, int64_t
 	return interpreter->GetFrame()->GetBytecodeIndex();
 }
 
-int64_t
-BytecodeHelper::allocateVMFrame(int64_t interp, int64_t previousFramePtr, int64_t methodPtr, int64_t argumentsPtr, int64_t localsPtr, int64_t stackPtr, int64_t bytecodeIndex, int64_t recursiveLevel)
+VMFrame*
+BytecodeHelper::allocateVMFrame(int64_t interp, int64_t previousFramePtr, int64_t methodPtr, int64_t argumentsPtr, int64_t localsPtr, int64_t** stackPtr, int64_t bytecodeIndex, int64_t recursiveLevel)
 {
 #define VALUE_FOR_ALLOCATE_VMFRAME_LINE LINETOSTR(__LINE__)
 
@@ -319,15 +317,14 @@ BytecodeHelper::allocateVMFrame(int64_t interp, int64_t previousFramePtr, int64_
 
 	frame->SetBytecodeIndex((long)bytecodeIndex);
 
-	return (int64_t)frame;
+	return frame;
 }
 
 int64_t
-BytecodeHelper::doSuperSendHelper(int64_t interp, int64_t framePtr, int64_t signaturePtr, int64_t bytecodeIndex)
+BytecodeHelper::doSuperSendHelper(int64_t* interp, VMFrame* frame, int64_t signaturePtr, int64_t bytecodeIndex)
 {
 #define VALUE_FOR_DO_SUPER_SEND_HELPER_LINE LINETOSTR(__LINE__)
 	//fprintf(stderr, "doSuperSend\n");
-	VMFrame *frame = (VMFrame *)framePtr;
 	VMSymbol* signature = (VMSymbol *)signaturePtr;
 	VMFrame* ctxt = frame->GetOuterContext();
 	VMMethod* realMethod = ctxt->GetMethod();
@@ -392,7 +389,7 @@ BytecodeHelper::doSuperSendHelper(int64_t interp, int64_t framePtr, int64_t sign
 }
 
 void
-BytecodeHelper::popFrameAndPushResult(int64_t interp, int64_t framePtr, int64_t result)
+BytecodeHelper::popFrameAndPushResult(int64_t* interp, VMFrame* frame, int64_t* result)
 {
 #define VALUE_FOR_POP_FRAME_AND_PUSH_RESULT_LINE LINETOSTR(__LINE__)
 	//fprintf(stderr, "popframe\n");
@@ -416,12 +413,12 @@ BytecodeHelper::popFrameAndPushResult(int64_t interp, int64_t framePtr, int64_t 
 }
 
 int64_t
-BytecodeHelper::popToContext(int64_t interp, int64_t framePtr)
+BytecodeHelper::popToContext(int64_t* interp, VMFrame* frame)
 {
 #define VALUE_FOR_POP_TO_CONTEXT_LINE LINETOSTR(__LINE__)
 	//fprintf(stderr, "popToContext\n");
 	Interpreter *interpreter = (Interpreter *)interp;
-	VMFrame* currentFrame = (VMFrame *)framePtr;
+	VMFrame* currentFrame = frame;
 	VMFrame *context = currentFrame->GetOuterContext();
 
 	if (!context->HasPreviousFrame()) {

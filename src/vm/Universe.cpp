@@ -56,7 +56,7 @@
 #include "JitBuilder.hpp"
 #include "ilgen/TypeDictionary.hpp"
 #include "../../omrglue/CollectorLanguageInterfaceImpl.hpp"
-#include "../../src/jit/SOMppMethod.hpp"
+#include "../../src/jit/SOMppMethod_with_vm_state.hpp"
 #include "../../omr/include_core/omrvm.h"
 #include "../../omr/include_core/omrlinkedlist.h"
 #include "../../omrglue/MarkingDelegate.hpp"
@@ -364,7 +364,8 @@ int Universe::jitCompilationEntryPoint(void *arg) {
 	       during compilation? */
 	    /* We need a way to interrupt the JIT compile or block
 	       the GC from happening during compilation */
-	    SOMppMethod methodBuilder(&types, node->vmMethod, true);
+	    // disable inlining!! for now.
+	    SOMppMethod methodBuilder(&types, node->vmMethod, false);
 	    void *entry = nullptr;
 
 	    rc = (*compileMethodBuilder)(&methodBuilder, &entry);
