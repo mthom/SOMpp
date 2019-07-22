@@ -51,6 +51,8 @@
 #include <dlfcn.h>
 #include <errno.h>
 
+#include <vector>
+
 #include "JitBuilder.hpp"
 
 #include "ilgen/BytecodeBuilder.hpp"
@@ -773,6 +775,18 @@ SOMppMethod::doSend(OMR::JitBuilder::BytecodeBuilder *builder, OMR::JitBuilder::
 #if SOM_METHOD_DEBUG
 	fprintf(stderr, " %s ", signature->GetChars());
 #endif
+
+	std::vector<OMR::JitBuilder::IlValue*> args(numOfArgs, nullptr);
+
+	for(int i = 0; i < numOfArgs; ++i) {
+	  args.push_back(PICK(builder, numOfArgs - 1 - i));
+	}
+
+	auto* virtual_fn = builder->CallVirtual(signature->GetChars(), numOfArgs, args.data());
+	
+	if(virtual_fn != nullptr) {
+	  return;
+	}
 
 	INLINE_STATUS status = doInlineIfPossible(&builder, &genericSend, &merge, signature, bytecodeIndex);
 	if (status != INLINE_FAILED) {
