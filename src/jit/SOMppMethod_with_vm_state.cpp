@@ -300,6 +300,22 @@ SOMppMethod::defineParameters()
 }
 
 void
+SOMppMethod::defineFunction(const char* name)
+{
+   if (_functionsAdded.find(name) != _functionsAdded.end())
+       return;
+   else
+       _functionsAdded.insert(name);
+
+   DefineFunction(name, (char *)__FILE__, (char *)PRINTSTRING_LINE,
+		  reinterpret_cast<void*>(18),
+		  NoType,
+		  2,
+		  pInt64,
+		  pVMFrame);
+}
+
+void
 SOMppMethod::defineLocals()
 {
 	DefineLocal("frameOuterContext", pVMFrame);
@@ -462,7 +478,7 @@ SOMppMethod::buildIL()
 
 	stackTop = new OMR::JitBuilder::VirtualMachineRegisterInStruct(this, "VMFrame", "frame", "stack_ptr", "SP");
 	stack = new OMR::JitBuilder::VirtualMachineOperandStack(this, 32, valueType, stackTop);
-	
+
 	SOMppVMState *vmState = new SOMppVMState(stack, stackTop);
 	setVMState(vmState);
 
@@ -776,17 +792,33 @@ SOMppMethod::doSend(OMR::JitBuilder::BytecodeBuilder *builder, OMR::JitBuilder::
 	fprintf(stderr, " %s ", signature->GetChars());
 #endif
 
-	std::vector<OMR::JitBuilder::IlValue*> args(numOfArgs, nullptr);
+	std::vector<OMR::JitBuilder::IlValue*> args;
+	args.reserve(2);
 
-	for(int i = 0; i < numOfArgs; ++i) {
-	  args.push_back(PICK(builder, numOfArgs - 1 - i));
-	}
+//	for(int i = 0; i < numOfArgs; ++i) {
+//	  args.push_back(PICK(builder, numOfArgs - 1 - i));
+//	}
 
-	auto* virtual_fn = builder->CallVirtual(signature->GetChars(), numOfArgs, args.data());
-	
-	if(virtual_fn != nullptr) {
-	  return;
-	}
+	args.push_back(builder->Load("interpreter"));
+	args.push_back(builder->Load("frame"));
+
+//	char* className = method->GetHolder()->GetName()->GetChars();
+//	std::string methodName = std::string(className) + ">>#" + signature->GetChars();
+
+	builder->CallVirtual(signature->GetChars(), 2, args.data());
+
+	// sendResult : pInt64
+	builder->Store("sendResult",
+	builder->      LoadAt(ppInt64,
+	builder-> 	      LoadIndirect("VMFrame", "stack_ptr",
+	builder->	 		   Load("frame"))));
+
+	DROP(builder, numOfArgs);
+	PUSH(builder, builder->Load("sendResult"));
+
+	builder->AddFallThroughBuilder(fallThrough);
+
+	return;
 
 	INLINE_STATUS status = doInlineIfPossible(&builder, &genericSend, &merge, signature, bytecodeIndex);
 	if (status != INLINE_FAILED) {

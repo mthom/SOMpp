@@ -87,8 +87,12 @@ bool VMClass::AddInstanceInvokable(VMInvokable* ptr) {
     long numIndexableFields = instInvokables->GetNumberOfIndexableFields();
     for (long i = 0; i < numIndexableFields; ++i) {
         VMInvokable* inv = static_cast<VMInvokable*>(instInvokables->GetIndexableField(i));
-        if (inv != nullptr) {
+        if (inv != nullptr) {	  
             if (ptr->GetSignature() == inv->GetSignature()) {
+	        if (auto *mptr = dynamic_cast<VMMethod*>(ptr)) {
+		   cardMethodMap[mptr->card] = mptr;
+		}
+
                 SetInstanceInvokable(i, ptr);
                 return false;
             }
@@ -98,6 +102,11 @@ bool VMClass::AddInstanceInvokable(VMInvokable* ptr) {
             return false;
         }
     }
+
+    if (auto *mptr = dynamic_cast<VMMethod*>(ptr)) {
+       cardMethodMap[mptr->card] = mptr;
+    }
+    
     //it's a new invokable so we need to expand the invokables array.
     store_ptr(instanceInvokables, instInvokables->CopyAndExtendWith((vm_oop_t) ptr));
 
@@ -144,10 +153,23 @@ VMInvokable* VMClass::GetInstanceInvokable(long index) const {
 }
 
 void VMClass::SetInstanceInvokable(long index, VMInvokable* invokable) {
+    if (auto *mptr = dynamic_cast<VMMethod*>(invokable)) {
+       cardMethodMap[mptr->card] = mptr;
+    }
+   
     load_ptr(instanceInvokables)->SetIndexableField(index, invokable);
     if (invokable != reinterpret_cast<VMInvokable*>(load_ptr(nilObject))) {
         invokable->SetHolder(this);
     }
+}
+
+VMMethod* VMClass::LookupMethodByCard(uint64_t card)
+{
+    if ((auto it = cardMethodMap.find(card)) != cardMethodMap.end()) {
+       return it->second;
+    }
+
+    return nullptr;
 }
 
 VMInvokable* VMClass::LookupInvokable(VMSymbol* name) const {
@@ -269,6 +291,14 @@ void VMClass::setPrimitives(const StdString& cname, bool classSide) {
         }
         current = current->GetSuperClass();
     }
+}
+
+DispatchTable<256>* VMClass::GetDispatchTable() {
+    return dispatchTable;
+}
+
+DispatchTable<256>** VMClass::GetAddressOfDispatchTable() {
+    return &dispatchTable;
 }
 
 StdString VMClass::AsDebugString() const {

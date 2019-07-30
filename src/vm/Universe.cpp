@@ -324,6 +324,39 @@ VMMethod* Universe::createBootstrapMethod(VMClass* holder, long numArgsOfMsgSend
 }
 
 #if GC_TYPE == OMR_GARBAGE_COLLECTION
+void Universe::compileAOTMethods() {
+   uint32_t rc = 0;
+   
+   for (auto& methodStub : aotMethodQueue) {
+     OMR::JitBuilder::TypeDictionary types;
+
+     SOMppMethod methodBuilder(&types, methodStub, false);
+     void *entry = nullptr;
+
+     for (auto& otherStub : aotMethodQueue) {
+         if (methodStub == otherStub)
+	     continue;
+
+//	 char* className = otherStub->GetHolder()->GetName()->GetChars();
+	 char* signature = otherStub->GetSignature()->GetChars();
+
+//	 char* methodName = new char[64];
+	 
+//	 sprintf(methodName, "%s>>#%s", className, signature);
+	 
+	 std::cout << "adding " << signature << "\n";
+	 
+	 methodBuilder.defineFunction(signature);
+     }
+
+     rc = (*compileMethodBuilder)(&methodBuilder, &entry);
+
+     if (0 == rc) {
+         methodStub->compiledMethod = (SOMppFunctionType *)entry;
+     }
+   }
+}
+
 int Universe::jitCompilationEntryPoint(void *arg) {
     SOM_VM *vm = (SOM_VM *) arg;
     OMR_VMThread *omrVMThread = NULL;
@@ -341,13 +374,28 @@ int Universe::jitCompilationEntryPoint(void *arg) {
     vm->jitCompilationState = 0;
     omrthread_monitor_notify_all(vm->jitCompilationQueueMonitor);
 
+    /*
+    OMR_CompilationQueueNode *root = J9_LINKED_LIST_START_DO(vm->jitCompilationQueue);
+    OMR_CompilationQueueNode *element = root;
+
+    std::vector<std::pair<char*, long>> methodSigs;
+
+    if(root) {
+      do {
+        char* methodName = element->vmMethod->GetSignature()->GetChars();
+	long numOfArgs = element->vmMethod->GetNumberOfArguments();
+
+	methodSigs.push_back(std::pair<char*, int>(methodName, numOfArgs));
+      } while (J9_LINKED_LIST_NEXT_DO(root, element));
+    }
+    */
     while (2 != vm->jitCompilationState) {
         while (0 == vm->jitCompilationState) {
             omrthread_monitor_wait(vm->jitCompilationQueueMonitor);
         }
 
         if (1 == vm->jitCompilationState) {
-        	uint32_t rc = 0;
+	    uint32_t rc = 0;
             OMR_CompilationQueueNode *node = NULL;
             if (J9_LINKED_LIST_IS_EMPTY(vm->jitCompilationQueue)) {
                 vm->jitCompilationState = 0;
@@ -477,16 +525,6 @@ void Universe::initialize(long _argc, char** _argv) {
         Universe::ErrorPrint("Failed startup OMR\n");
         GetUniverse()->Quit(-1);
     }
-//
-//    /* Initialize root table */
-//    vm->rootTable = hashTableNew(vm->omrVM->_runtime->_portLibrary, OMR_GET_CALLSITE(), 0, sizeof(RootEntry),
-//				 0, 0, OMRMEM_CATEGORY_MM,
-//				 rootTableHashFn, rootTableHashEqualFn, NULL, NULL);
-//
-//    /* Initialize object table */
-//    vm->objectTable = hashTableNew(vm->omrVM->_runtime->_portLibrary, OMR_GET_CALLSITE(), 0, sizeof(ObjectEntry),
-//				   0, 0, OMRMEM_CATEGORY_MM,
-//				   objectTableHashFn, objectTableHashEqualFn, NULL, NULL);
 
     if (enableJIT) {
     	enableJIT = initializeJit();
@@ -767,6 +805,8 @@ VMObject* Universe::InitializeGlobals() {
     symbolIfTrue  = _store_ptr(SymbolForChars("ifTrue:"));
     symbolIfFalse = _store_ptr(SymbolForChars("ifFalse:"));
 
+    compileAOTMethods();
+
     return systemObject;
 }
 
@@ -912,6 +952,8 @@ void Universe::LoadSystemClass(VMClass* systemClass) {
 
     if (result->HasPrimitives() || result->GetClass()->HasPrimitives())
         result->LoadPrimitives(classPath);
+
+    enqueueAOTMethods(systemClass);
 }
 
 VMArray* Universe::NewArray(long size) const {
@@ -1171,7 +1213,7 @@ Universe::NewMethod(VMSymbol* signature, size_t numberOfBytecodes, size_t number
 {
     //Method needs space for the bytecodes and the pointers to the constants
     long additionalBytes = PADDED_SIZE(numberOfBytecodes + numberOfConstants * sizeof(VMObject*));
-    
+
 //#if GC_TYPE==GENERATIONAL
 //    VMMethod* result = new (GetHeap<HEAP_CLS>(),additionalBytes, true)
 //                VMMethod(numberOfBytecodes, numberOfConstants);
@@ -1223,6 +1265,16 @@ VMClass* Universe::NewSystemClass() const {
 
     LOG_ALLOCATION("VMClass", systemClass->GetObjectSize());
     return systemClass;
+}
+
+void Universe::enqueueAOTMethods(VMClass* clazz) {
+   for(long i = 0; i < clazz->GetNumberOfInstanceInvokables(); ++i) {
+     if (auto method = dynamic_cast<VMMethod*>(clazz->GetInstanceInvokable(i))) {
+        if (aotMethodQueue.find(method) == aotMethodQueue.end()) {
+	   aotMethodQueue.insert(method);
+	}
+     }
+   }
 }
 
 VMSymbol* Universe::SymbolFor(const StdString& str) {

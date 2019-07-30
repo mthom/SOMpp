@@ -60,7 +60,8 @@ set(PRIMITIVES_CORE_SRC "${PRIMITIVES_CORE_INCLUDE}/PrimitiveContainer.cpp"
 
 set(VM_INCLUDE "${CMAKE_CURRENT_SOURCE_DIR}/src/vm")
 
-set(VM_SRC "${VM_INCLUDE}/Shell.cpp"
+set(VM_SRC "${VM_INCLUDE}/DispatchTable.cpp"
+           "${VM_INCLUDE}/Shell.cpp"
            "${VM_INCLUDE}/Universe.cpp")
 
 set(JIT_INCLUDE "${CMAKE_CURRENT_SOURCE_DIR}/src/jit")

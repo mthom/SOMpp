@@ -299,6 +299,76 @@ void Interpreter::popFrameAndPushResult(vm_oop_t result) {
     GetFrame()->Push(result);
 }
 
+VMInvokable*
+Interpreter::selectorMismatchHandler(VMSymbol* signature, VMClass* clazz, uint64_t card,
+				     uint_64 code)
+{
+   if (clazz->GetDispatchTable() == DispatchTable::defaultDispatchTable) {
+      clazz->SetDispatchTable(allocDispatchTable(clazz->GetAddressOfDispatchTable()));
+   }
+
+   VMInvokable* method;
+   
+   if ((method = clazz->LookupMethodByCard(card)) == nullptr) {
+      doesNotUnderstand(signature);
+      return;
+   }
+
+   uint8_t currentCode = VMMethod::GetSelectorCode(card);
+
+   clazz->GetDispatchTable()[currentCode] = method;
+
+   if (currentCode != code) {
+     // instructionPointer[-1] = currentCode;
+   }
+
+   return method;
+}
+
+void Interpreter::send(uint64_t card, uint64_t code, VMSymbol* signature, VMClass* receiverClass)
+{
+    VMInvokable* method = receiverClass->GetDispatchTable()[code];
+
+    if (method->getCard() != card) {
+       method = selectorMismatchHandler(signature, clazz, card, code);
+    }
+
+    if (method != nullptr) {
+       method->Invoke(this, GetFrame());
+    }
+}
+
+void Interpreter::doesNotUnderstand(VMSymbol* signature)
+{
+   long numberOfArgs = Signature::GetNumberOfArguments(signature);
+
+   vm_oop_t receiver = GetFrame()->GetStackElement(numberOfArgs-1);
+
+   VMArray* argumentsArray = GetUniverse()->NewArray(numberOfArgs - 1); // without receiver
+
+   // the receiver should not go into the argumentsArray
+   // so, numberOfArgs - 2
+   for (long i = numberOfArgs - 2; i >= 0; --i) {
+     vm_oop_t o = GetFrame()->Pop();
+     argumentsArray->SetIndexableField(i, o);
+   }
+   vm_oop_t arguments[] = {signature, argumentsArray};
+        
+   GetFrame()->Pop(); // pop the receiver
+
+   //check if current frame is big enough for this unplanned Send
+   //doesNotUnderstand: needs 3 slots, one for this, one for method name, one for args
+   long additionalStackSlots = 3 - GetFrame()->RemainingStackSize();
+   if (additionalStackSlots > 0) {
+     GetFrame()->SetBytecodeIndex(bytecodeIndexGlobal);
+     //copy current frame into a bigger one and replace the current frame
+     SetFrame(VMFrame::EmergencyFrameFrom(GetFrame(), additionalStackSlots));
+   }
+
+   AS_OBJ(receiver)->Send(this, doesNotUnderstand, arguments, 2);
+}
+
+/*
 void Interpreter::send(VMSymbol* signature, VMClass* receiverClass) {
     VMInvokable* invokable = receiverClass->LookupInvokable(signature);
 
@@ -346,6 +416,7 @@ void Interpreter::send(VMSymbol* signature, VMClass* receiverClass) {
         AS_OBJ(receiver)->Send(this, doesNotUnderstand, arguments, 2);
     }
 }
+*/
 
 void Interpreter::doDup() {
     vm_oop_t elem = GetFrame()->GetStackElement(0);
@@ -501,8 +572,11 @@ void Interpreter::doSuperSend(long bytecodeIndex) {
     VMMethod* realMethod = ctxt->GetMethod();
     VMClass* holder = realMethod->GetHolder();
     VMClass* super = holder->GetSuperClass();
-    VMInvokable* invokable = static_cast<VMInvokable*>(super->LookupInvokable(signature));
 
+    send(signature, super);
+    
+    //    VMInvokable* invokable = static_cast<VMInvokable*>(super->LookupInvokable(signature));
+    /*
     if (invokable != nullptr)
         invokable->Invoke(this, GetFrame());
     else {
@@ -517,7 +591,7 @@ void Interpreter::doSuperSend(long bytecodeIndex) {
         vm_oop_t arguments[] = {signature, argumentsArray};
 
         AS_OBJ(receiver)->Send(this, doesNotUnderstand, arguments, 2);
-    }
+	}*/
 }
 
 void Interpreter::doReturnLocal() {

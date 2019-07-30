@@ -105,6 +105,8 @@ public:
 
      return fields;
    }
+
+   static uint8_t GetSelectorCode(uint64_t card);
    
 #if GC_TYPE == OMR_GARBAGE_COLLECTION
 #ifdef UNSAFE_FRAME_OPTIMIZATION
@@ -141,6 +143,9 @@ private:
 #endif
     gc_oop_t* indexableFields;
     uint8_t* bytecodes;
+
+    static std::map<uint64_t, uint8_t> cardCodeMap; // card --> code, large! as many keys as there are selectors.
+    static uint64_t codeCardMap[256]; // code --> card, bounded!
 };
 
 inline long VMMethod::GetNumberOfLocals() const {

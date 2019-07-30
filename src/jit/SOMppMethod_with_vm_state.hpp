@@ -27,6 +27,7 @@
 
 #include <stack>
 #include <map>
+#include <set>
 
 class VMBlock;
 class VMMethod;
@@ -106,7 +107,11 @@ class SOMppMethod: public OMR::JitBuilder::MethodBuilder {
 public:
 	SOMppMethod(OMR::JitBuilder::TypeDictionary *types, VMMethod *vmMethod, bool inlineCalls);
 	virtual bool buildIL();
+        void defineFunction(const char*);
+
 protected:
+        std::set<std::string> _functionsAdded;
+  
 	OMR::JitBuilder::IlType *pInt64;
         OMR::JitBuilder::IlType *ppInt64;
 	OMR::JitBuilder::IlType *pDouble;
@@ -130,6 +135,7 @@ protected:
 	static OMR::JitBuilder::IlValue *equalTo(OMR::JitBuilder::BytecodeBuilder *builder, OMR::JitBuilder::IlValue *param1, OMR::JitBuilder::IlValue *param2);
 	static void forLoopUp(OMR::JitBuilder::BytecodeBuilder *builder, const char *index, OMR::JitBuilder::IlBuilder **loop, OMR::JitBuilder::IlValue *start, OMR::JitBuilder::IlValue *end, OMR::JitBuilder::IlValue *increment);
 	static void forLoopDown(OMR::JitBuilder::BytecodeBuilder *builder, const char *index, OMR::JitBuilder::IlBuilder **loop, OMR::JitBuilder::IlValue *start, OMR::JitBuilder::IlValue *end, OMR::JitBuilder::IlValue *increment);
+        
 private:
 	VMMethod *method;
 	std::stack<VMMethod *> blockMethods;

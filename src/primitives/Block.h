@@ -39,5 +39,4 @@ public:
     
     void Spawn(Interpreter*, VMFrame*);
     void Spawn_(Interpreter*, VMFrame*);
-
 };

@@ -24,6 +24,8 @@
  THE SOFTWARE.
  */
 
+#include "../vm/DispatchTable.h"
+
 #include "VMMethod.h"
 #include "VMFrame.h"
 #include "VMClass.h"
@@ -42,6 +44,10 @@
 #include "../../omr/include_core/omrlinkedlist.h"
 #include "JitBuilder.hpp"
 #endif
+
+#include <cstdio>
+#include <cstdlib>
+#include <ctime>
 
 #if GC_TYPE == OMR_GARBAGE_COLLECTION
 #define MAX_INVOKES_BEFORE_COMPILE 10

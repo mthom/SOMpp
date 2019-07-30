@@ -29,6 +29,7 @@
 //#define __DEBUG
 #include <map>
 #include <mutex>
+#include <set>
 #include <vector>
 
 #include "../misc/defs.h"
@@ -157,7 +158,9 @@ public:
     static void ErrorPrint(StdString str);
 
 private:
-    vector<StdString> handleArguments(long argc, char** argv);
+    set<VMMethod*> aotMethodQueue;
+
+    vector<StdString> handleArguments(long argc, char** argv);    
     long getClassPathExt(vector<StdString>& tokens, const StdString& arg) const;
 
     VMMethod* createBootstrapMethod(VMClass* holder, long numArgsOfMsgSend);
@@ -171,6 +174,9 @@ private:
 
     void initialize(long, char**);
 
+    void enqueueAOTMethods(VMClass*);
+    void compileAOTMethods();
+    
 #if GC_TYPE == OMR_GARBAGE_COLLECTION
     static int jitCompilationEntryPoint(void *arg);
     uintptr_t createJITAsyncCompileThread(SOM_VM *vm);

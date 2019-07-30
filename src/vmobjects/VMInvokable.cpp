@@ -24,9 +24,16 @@
  THE SOFTWARE.
  */
 
+#include "DispatchTable.h"
+
 #include "VMInvokable.h"
 #include "VMSymbol.h"
 #include "VMClass.h"
+
+VMInvokable::VMInvokable(long nof)
+  : VMObject(nof + 2)
+  , card(newCard())
+{}
 
 bool VMInvokable::IsPrimitive() const {
     return false;
@@ -54,4 +61,33 @@ VMClass* VMInvokable::GetHolder() const {
 
 void VMInvokable::SetHolder(VMClass* hld) {
     store_ptr(holder, hld);
+}
+
+uint8_t VMInvokable::GetSelectorCode(uint64_t card)
+{
+   static uint8_t LAST_CODE = 0;
+   
+   if ((auto it = cardCodeMap.find(card)) != cardCodeMap.end()) {
+      if (codeCardMap[it->second] != card) {
+	// must have LAST_CODE == 255 to get here.
+	
+	// randomly select a code to be stolen.
+	// srand(time(0));
+	uint8_t code = (uint8_t) (rand() % 256);
+	
+	it->second = code;
+	codeCardMap[code] = card;
+	
+	return code;
+      } else {
+         return it->second;
+      }
+   } else {
+      uint8_t code = LAST_CODE < 255 ? LAST_CODE++ : (uint8_t) (rand() % 256);
+
+      codeCardMap[code] = card;
+      cardCodeMap[card] = code;
+
+      return code;
+   }
 }
