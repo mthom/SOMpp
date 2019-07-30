@@ -114,7 +114,7 @@ public:
 #if GC_TYPE == OMR_GARBAGE_COLLECTION
     VMFrame* NewJITFrame(VMFrame*, VMMethod*, vm_oop_t *args, vm_oop_t *locals, vm_oop_t *stack, long recLevel) const;
 #endif
-    VMMethod* NewMethod(VMSymbol*, size_t, size_t) const;
+    VMMethod* NewMethod(uint64_t, VMSymbol*, size_t, size_t) const;
     VMObject* NewInstance(VMClass*) const;
     VMInteger* NewInteger(int64_t) const;
     void WalkGlobals(walk_heap_fn);

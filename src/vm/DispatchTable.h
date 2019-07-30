@@ -1,30 +1,23 @@
 #pragma once
 
-#include "../vmobjects/VMInvokable.h"
+#include "../vmobjects/VMMethod.h"
 
-uint64_t newCard();
-
-struct DispatchTableEntry {
-  DispatchTableEntry();
-  
-  uint8_t code;
-  VMInvokable* method;
-};
+uint64_t NewCard();
 
 template <std::size_t N>
 class DispatchTable
 {
-friend class DispatchTableEntry;
-   
 public:
   static DispatchTable<N> defaultDispatchTable;
-  DispatchTableEntry operator [](uint64_t);
+
+  static void allocDispatchTable(DispatchTable<N>**);  
+  VMInvokable*& operator [](uint64_t);
 
 private:
   DispatchTable() {};
 
-  DispatchTableEntry _entries[N];
-  static VMInvokable selectorMismatchRaiser;
+  VMInvokable* _entries[N];
+  static VMMethod selectorMismatchRaiser;
 };
 
 template <std::size_t N>

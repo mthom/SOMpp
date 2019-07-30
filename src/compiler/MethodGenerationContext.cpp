@@ -28,6 +28,8 @@
 
 #include "../interpreter/bytecodes.h"
 
+#include "../vm/DispatchTable.h"
+
 #include "../vmobjects/VMSymbol.h"
 #include "../vmobjects/VMMethod.h"
 #include "../vmobjects/Signature.h"
@@ -45,14 +47,15 @@ MethodGenerationContext::MethodGenerationContext() {
     primitive = false;
     blockMethod = false;
     finished = false;
+    card = NewCard();
 }
 
 VMMethod* MethodGenerationContext::Assemble() {
     // create a method instance with the given number of bytecodes and literals
     size_t numLiterals = literals.Size();
 
-    VMMethod* meth = GetUniverse()->NewMethod(signature, bytecode.size(),
-            numLiterals);
+    VMMethod* meth = GetUniverse()->NewMethod(card, signature, bytecode.size(),
+					      numLiterals);
 
     // populate the fields that are immediately available
     size_t numLocals = locals.Size();

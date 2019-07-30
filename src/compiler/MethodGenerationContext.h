@@ -88,4 +88,5 @@ private:
     ExtendedList<vm_oop_t> literals;
     bool finished;
     std::vector<uint8_t> bytecode;
+    uint64_t card;
 };

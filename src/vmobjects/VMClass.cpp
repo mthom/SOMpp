@@ -87,13 +87,11 @@ bool VMClass::AddInstanceInvokable(VMInvokable* ptr) {
     long numIndexableFields = instInvokables->GetNumberOfIndexableFields();
     for (long i = 0; i < numIndexableFields; ++i) {
         VMInvokable* inv = static_cast<VMInvokable*>(instInvokables->GetIndexableField(i));
-        if (inv != nullptr) {	  
+        if (inv != nullptr) {
             if (ptr->GetSignature() == inv->GetSignature()) {
-	        if (auto *mptr = dynamic_cast<VMMethod*>(ptr)) {
-		   cardMethodMap[mptr->card] = mptr;
-		}
-
+	        cardMethodMap[ptr->GetCard()] = ptr;
                 SetInstanceInvokable(i, ptr);
+
                 return false;
             }
         } else {
@@ -103,10 +101,8 @@ bool VMClass::AddInstanceInvokable(VMInvokable* ptr) {
         }
     }
 
-    if (auto *mptr = dynamic_cast<VMMethod*>(ptr)) {
-       cardMethodMap[mptr->card] = mptr;
-    }
-    
+    cardMethodMap[ptr->GetCard()] = ptr;
+
     //it's a new invokable so we need to expand the invokables array.
     store_ptr(instanceInvokables, instInvokables->CopyAndExtendWith((vm_oop_t) ptr));
 
@@ -153,19 +149,19 @@ VMInvokable* VMClass::GetInstanceInvokable(long index) const {
 }
 
 void VMClass::SetInstanceInvokable(long index, VMInvokable* invokable) {
-    if (auto *mptr = dynamic_cast<VMMethod*>(invokable)) {
-       cardMethodMap[mptr->card] = mptr;
-    }
-   
+    cardMethodMap[invokable->GetCard()] = invokable;
+
     load_ptr(instanceInvokables)->SetIndexableField(index, invokable);
     if (invokable != reinterpret_cast<VMInvokable*>(load_ptr(nilObject))) {
         invokable->SetHolder(this);
     }
 }
 
-VMMethod* VMClass::LookupMethodByCard(uint64_t card)
+VMInvokable* VMClass::LookupMethodByCard(uint64_t card)
 {
-    if ((auto it = cardMethodMap.find(card)) != cardMethodMap.end()) {
+    auto it = cardMethodMap.find(card);
+
+    if (it != cardMethodMap.end()) {
        return it->second;
     }
 
@@ -174,7 +170,7 @@ VMMethod* VMClass::LookupMethodByCard(uint64_t card)
 
 VMInvokable* VMClass::LookupInvokable(VMSymbol* name) const {
     assert(Universe::IsValidObject(const_cast<VMClass*>(this)));
-    
+
     VMInvokable* invokable = name->GetCachedInvokable(this);
     if (invokable != nullptr)
         return invokable;
@@ -192,7 +188,7 @@ VMInvokable* VMClass::LookupInvokable(VMSymbol* name) const {
     if (HasSuperClass()) {
         return load_ptr(superClass)->LookupInvokable(name);
     }
-    
+
     // invokable not found
     return nullptr;
 }
@@ -224,7 +220,7 @@ bool VMClass::HasPrimitives() const {
 
 void VMClass::LoadPrimitives(const vector<StdString>& cp) {
     StdString cname = load_ptr(name)->GetStdString();
-    
+
     if (hasPrimitivesFor(cname)) {
         setPrimitives(cname, false);
         GetClass()->setPrimitives(cname, true);
@@ -245,12 +241,12 @@ bool VMClass::hasPrimitivesFor(const StdString& cl) const {
  * set the routines for primitive marked invokables of the given class
  */
 void VMClass::setPrimitives(const StdString& cname, bool classSide) {
-    
+
     VMClass* current = this;
-    
+
     // Try loading class-specific primitives for all super class' methods as well.
     while (current != load_ptr(nilObject)) {
-    
+
         // iterate invokables
         long numInvokables = current->GetNumberOfInstanceInvokables();
         for (long i = 0; i < numInvokables; i++) {
@@ -262,10 +258,10 @@ void VMClass::setPrimitives(const StdString& cname, bool classSide) {
 
             VMSymbol* sig = anInvokable->GetSignature();
             StdString selector = sig->GetPlainString();
-            
+
             PrimitiveRoutine* routine = PrimitiveLoader::GetPrimitiveRoutine(
                 cname, selector, anInvokable->IsPrimitive() && current == this);
-            
+
             if (routine && classSide == routine->isClassSide()) {
                 VMPrimitive* thePrimitive;
                 if (this == current && anInvokable->IsPrimitive()) {
@@ -293,8 +289,8 @@ void VMClass::setPrimitives(const StdString& cname, bool classSide) {
     }
 }
 
-DispatchTable<256>* VMClass::GetDispatchTable() {
-    return dispatchTable;
+DispatchTable<256>& VMClass::GetDispatchTable() {
+    return *dispatchTable;
 }
 
 DispatchTable<256>** VMClass::GetAddressOfDispatchTable() {

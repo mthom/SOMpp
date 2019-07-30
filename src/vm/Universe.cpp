@@ -30,6 +30,7 @@
 #include <fstream>
 #include <iomanip>
 
+#include "DispatchTable.h"
 #include "Universe.h"
 #include "Shell.h"
 
@@ -315,7 +316,7 @@ Universe::Universe() {
 }
 
 VMMethod* Universe::createBootstrapMethod(VMClass* holder, long numArgsOfMsgSend) {
-    VMMethod* bootstrapMethod = NewMethod(SymbolForChars("bootstrap"), 1, 0);
+    VMMethod* bootstrapMethod = NewMethod(NewCard(), SymbolForChars("bootstrap"), 1, 0);
     bootstrapMethod->SetBytecode(0, BC_HALT);
     bootstrapMethod->SetNumberOfLocals(0);
     bootstrapMethod->SetMaximumNumberOfStackElements(numArgsOfMsgSend);
@@ -1209,7 +1210,7 @@ void Universe::WalkGlobals(walk_heap_fn walk) {
 }
 
 VMMethod*
-Universe::NewMethod(VMSymbol* signature, size_t numberOfBytecodes, size_t numberOfConstants) const
+Universe::NewMethod(uint64_t card, VMSymbol* signature, size_t numberOfBytecodes, size_t numberOfConstants) const
 {
     //Method needs space for the bytecodes and the pointers to the constants
     long additionalBytes = PADDED_SIZE(numberOfBytecodes + numberOfConstants * sizeof(VMObject*));
@@ -1221,7 +1222,7 @@ Universe::NewMethod(VMSymbol* signature, size_t numberOfBytecodes, size_t number
     // include fields as well!
 
     VMMethod* result = new (GetHeap<HEAP_CLS>(), additionalBytes)
-    VMMethod(numberOfBytecodes, numberOfConstants);
+    VMMethod(numberOfBytecodes, numberOfConstants, card);
 //#endif
     result->SetClass(load_ptr(methodClass));
 

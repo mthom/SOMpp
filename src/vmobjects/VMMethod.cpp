@@ -53,8 +53,8 @@
 #define MAX_INVOKES_BEFORE_COMPILE 10
 #endif
 
-VMMethod::VMMethod(long bcCount, long numberOfConstants, long nof)
-  : VMInvokable(nof + VMMethodNumberOfFields)
+VMMethod::VMMethod(long bcCount, long numberOfConstants, uint64_t card, long nof)
+  : VMInvokable(card, nof + VMMethodNumberOfFields)
   , numberOfConstantsEmbedded(numberOfConstants)
 {
 #ifdef UNSAFE_FRAME_OPTIMIZATION

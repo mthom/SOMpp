@@ -43,8 +43,8 @@ public:
     }
 
  public:
-    VMInvokable(long nof = 0);
-
+    VMInvokable(uint64_t card, long nof = 0);
+            
     virtual void      Invoke(Interpreter*, VMFrame*) = 0;
 
     virtual bool      IsPrimitive() const;
@@ -53,6 +53,7 @@ public:
             VMClass*  GetHolder() const;
     virtual void      SetHolder(VMClass* hld);
 
+    uint64_t GetCard() const;
     void WalkObjects(walk_heap_fn);
 
     static uint8_t GetSelectorCode(uint64_t card);

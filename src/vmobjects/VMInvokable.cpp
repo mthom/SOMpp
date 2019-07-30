@@ -30,9 +30,12 @@
 #include "VMSymbol.h"
 #include "VMClass.h"
 
-VMInvokable::VMInvokable(long nof)
+std::map<uint64_t, uint8_t> VMInvokable::cardCodeMap {};
+uint64_t VMInvokable::codeCardMap[256] {};
+
+VMInvokable::VMInvokable(uint64_t card, long nof)
   : VMObject(nof + 2)
-  , card(newCard())
+  , card(card)
 {}
 
 bool VMInvokable::IsPrimitive() const {
@@ -66,21 +69,22 @@ void VMInvokable::SetHolder(VMClass* hld) {
 uint8_t VMInvokable::GetSelectorCode(uint64_t card)
 {
    static uint8_t LAST_CODE = 0;
-   
-   if ((auto it = cardCodeMap.find(card)) != cardCodeMap.end()) {
+   auto it = cardCodeMap.find(card);
+
+   if (it != cardCodeMap.end()) {
       if (codeCardMap[it->second] != card) {
-	// must have LAST_CODE == 255 to get here.
-	
-	// randomly select a code to be stolen.
-	// srand(time(0));
-	uint8_t code = (uint8_t) (rand() % 256);
-	
-	it->second = code;
-	codeCardMap[code] = card;
-	
-	return code;
+	 // must have LAST_CODE == 255 to get here.
+	 
+	 // randomly select a code to be stolen.
+	 // srand(time(0));
+	 uint8_t code = (uint8_t) (rand() % 256);
+	 
+	 it->second = code;
+	 codeCardMap[code] = card;
+	 
+	 return code;
       } else {
-         return it->second;
+	 return it->second;
       }
    } else {
       uint8_t code = LAST_CODE < 255 ? LAST_CODE++ : (uint8_t) (rand() % 256);
@@ -90,4 +94,8 @@ uint8_t VMInvokable::GetSelectorCode(uint64_t card)
 
       return code;
    }
+}
+
+uint64_t VMInvokable::GetCard() const {
+   return card;
 }

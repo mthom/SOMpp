@@ -27,6 +27,7 @@
 #include "Interpreter.h"
 #include "bytecodes.h"
 
+#include <vm/DispatchTable.h>
 #include <vmobjects/VMMethod.h>
 #include <vmobjects/VMFrame.h>
 #include <vmobjects/VMMethod.h>
@@ -300,18 +301,17 @@ void Interpreter::popFrameAndPushResult(vm_oop_t result) {
 }
 
 VMInvokable*
-Interpreter::selectorMismatchHandler(VMSymbol* signature, VMClass* clazz, uint64_t card,
-				     uint_64 code)
+Interpreter::selectorMismatchHandler(VMSymbol* signature, VMClass* clazz, uint64_t card, uint64_t code)
 {
-   if (clazz->GetDispatchTable() == DispatchTable::defaultDispatchTable) {
-      clazz->SetDispatchTable(allocDispatchTable(clazz->GetAddressOfDispatchTable()));
+   if (&clazz->GetDispatchTable() == &DispatchTable<256>::defaultDispatchTable) {
+      DispatchTable<256>::allocDispatchTable(clazz->GetAddressOfDispatchTable());
    }
 
    VMInvokable* method;
    
    if ((method = clazz->LookupMethodByCard(card)) == nullptr) {
-      doesNotUnderstand(signature);
-      return;
+      doesNotUnderstandHandler(signature);
+      return nullptr;
    }
 
    uint8_t currentCode = VMMethod::GetSelectorCode(card);
@@ -329,8 +329,8 @@ void Interpreter::send(uint64_t card, uint64_t code, VMSymbol* signature, VMClas
 {
     VMInvokable* method = receiverClass->GetDispatchTable()[code];
 
-    if (method->getCard() != card) {
-       method = selectorMismatchHandler(signature, clazz, card, code);
+    if (method->GetCard() != card) {
+       method = selectorMismatchHandler(signature, receiverClass, card, code);
     }
 
     if (method != nullptr) {
@@ -338,10 +338,9 @@ void Interpreter::send(uint64_t card, uint64_t code, VMSymbol* signature, VMClas
     }
 }
 
-void Interpreter::doesNotUnderstand(VMSymbol* signature)
+void Interpreter::doesNotUnderstandHandler(VMSymbol* signature)
 {
    long numberOfArgs = Signature::GetNumberOfArguments(signature);
-
    vm_oop_t receiver = GetFrame()->GetStackElement(numberOfArgs-1);
 
    VMArray* argumentsArray = GetUniverse()->NewArray(numberOfArgs - 1); // without receiver
@@ -562,7 +561,7 @@ void Interpreter::doSend(long bytecodeIndex) {
     GetUniverse()->receiverTypes[receiverClass->GetName()->GetStdString()]++;
 #endif
 
-    send(signature, receiverClass);
+    send(0, 0, signature, receiverClass); //TODO: change to meaningful values!
 }
 
 void Interpreter::doSuperSend(long bytecodeIndex) {
@@ -573,7 +572,7 @@ void Interpreter::doSuperSend(long bytecodeIndex) {
     VMClass* holder = realMethod->GetHolder();
     VMClass* super = holder->GetSuperClass();
 
-    send(signature, super);
+    send(0, 0, signature, super);
     
     //    VMInvokable* invokable = static_cast<VMInvokable*>(super->LookupInvokable(signature));
     /*

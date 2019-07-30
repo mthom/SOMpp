@@ -48,15 +48,15 @@ public:
     VMClass(long numberOfFields);
 
     virtual ~VMClass() {
-      if (dispatchTable && dispatchTable != &DispatchTable::defaultDispatchTable) {
+      if (dispatchTable && dispatchTable != &DispatchTable<256>::defaultDispatchTable) {
 	 delete dispatchTable;
       }
     }
 
-    inline DispatchTable<256>*  GetDispatchTable();
-    inline DispatchTable<256>** GetAddressOfDispatchTable();
+    DispatchTable<256>&  GetDispatchTable();
+    DispatchTable<256>** GetAddressOfDispatchTable();
+    VMInvokable* LookupMethodByCard(uint64_t);
 
-    inline VMMethod*    LookupMethodByCard(uint64_t);
     inline VMClass*     GetSuperClass() const;
     inline void         SetSuperClass(VMClass*);
     inline bool         HasSuperClass() const;
@@ -105,7 +105,7 @@ private:
     GCArray* instanceFields;
     GCArray* instanceInvokables;
 
-    std::map<uint64_t, VMMethod*> cardMethodMap;
+    std::map<uint64_t, VMInvokable*> cardMethodMap;
     DispatchTable<256>* dispatchTable;
 
     static const long VMClassNumberOfFields;

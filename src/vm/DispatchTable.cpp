@@ -1,25 +1,24 @@
 #include "DispatchTable.h"
-#include "VMFrame.h"
-#include "Interpreter.h"
 
-uint64_t newCard() {
+uint64_t NewCard() {
    static uint64_t NEW_CARD = 0;
    return NEW_CARD++;
 }
 
-DispatchTableEntry::DispatchTableEntry()
-  : code{0}
-  , method{&DispatchTable::selectorMismatchRaiser}
-{}
+template <std::size_t N>
+DispatchTable<N> DispatchTable<N>::defaultDispatchTable {};
 
 template <std::size_t N>
-DispatchTableEntry DispatchTable<N>::operator [](uint64_t index)
+VMMethod DispatchTable<N>::selectorMismatchRaiser(0, 0, NewCard());
+
+template <std::size_t N>
+VMInvokable*& DispatchTable<N>::operator [](uint64_t index)
 {
    return _entries[index];
 }
 
 template <std::size_t N>
-void allocDispatchTable(DispatchTable<N>** table)
+void DispatchTable<N>::allocDispatchTable(DispatchTable<N>** table)
 {
    static uint8_t LAST_UNUSED_TABLE = 0;
    static DispatchTable<N>** TABLE_CACHE[N];
@@ -36,3 +35,6 @@ void allocDispatchTable(DispatchTable<N>** table)
       TABLE_CACHE[index] = table;
    }
 }
+
+template class DispatchTable<256>;
+

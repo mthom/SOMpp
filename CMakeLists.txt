@@ -4,7 +4,7 @@ project (SOMPP)
 # set(CMAKE_PROJECT_ROOT ${CMAKE_CURRENT_SOURCE_DIR})
 # set(CMAKE_CXX_STANDARD 14)
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIE -fstack-protector-all")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIE")
 
 add_subdirectory(omr)
 
@@ -65,7 +65,7 @@ set(VM_SRC "${VM_INCLUDE}/DispatchTable.cpp"
            "${VM_INCLUDE}/Universe.cpp")
 
 set(JIT_INCLUDE "${CMAKE_CURRENT_SOURCE_DIR}/src/jit")
-	 
+
 set(JIT_SRC # "${JIT_INCLUDE}/SOMppMethod.cpp"
             "${JIT_INCLUDE}/SOMppMethod_with_vm_state.cpp")
 
@@ -89,14 +89,11 @@ set(VM_OBJECTS_SRC "${VM_OBJECTS_INCLUDE}/AbstractObject.cpp"
 		   "${VM_OBJECTS_INCLUDE}/VMSymbol.cpp")
 
 add_library(som_vm INTERFACE)
-		 
+
 target_sources(som_vm INTERFACE
-  "${INTERPRETER_SRC}" "${VM_OBJECTS_SRC}" "${VM_SRC}" "${MEMORY_SRC}" "${JIT_SRC}"
-  "${PRIMITIVES_CORE_SRC}"
-  "${PRIMITIVES_SRC}"
-  "${COMPILER_SRC}"
-  "${MISC_SRC}"
-)
+  "${VM_SRC}" "${COMPILER_SRC}" "${INTERPRETER_SRC}" "${VM_OBJECTS_SRC}"
+  "${MEMORY_SRC}" "${JIT_SRC}" "${PRIMITIVES_CORE_SRC}"
+  "${PRIMITIVES_SRC}" "${MISC_SRC}" )
 
 target_link_libraries(som_vm INTERFACE jitbuilder omrcore omrvmstartup)
 
@@ -123,7 +120,7 @@ set(OMR_INCLUDE "${CMAKE_CURRENT_SOURCE_DIR}/omr/compiler"
 		"${CMAKE_CURRENT_SOURCE_DIR}/omrglue"
 		"${CMAKE_CURRENT_SOURCE_DIR}/omr/gc/stats"
                 "${CMAKE_CURRENT_SOURCE_DIR}/omr")
-		 
+
 set(OMR_GLUE_INCLUDE "${CMAKE_CURRENT_SOURCE_DIR}/omrglue")
 
 set(OMR_GLUE_SRC "${OMR_GLUE_INCLUDE}/BytecodeHelper.cpp"
@@ -143,7 +140,7 @@ set(OMR_GLUE_SRC "${OMR_GLUE_INCLUDE}/BytecodeHelper.cpp"
 		 "${OMR_GLUE_INCLUDE}/Profiling.cpp"
 		 "${OMR_GLUE_INCLUDE}/StartupManagerImpl.cpp"
 		 "${OMR_GLUE_INCLUDE}/VerboseManagerImpl.cpp")
-	       
+
 add_library(omr_som_gc_glue INTERFACE)
 
 set(OMR_GC_GLUE_TARGET "omr_som_gc_glue" CACHE
@@ -161,7 +158,7 @@ target_link_libraries(omr_som_gc_glue
 target_include_directories(omr_som_gc_glue INTERFACE
    "${OMR_GLUE_INCLUDE}" "${OMR_INCLUDE}" "${VM_INCLUDE}")
 
-add_definitions(-DDEFAULT_OMR_JIT_ON=true -DGC_TYPE=OMR_GARBAGE_COLLECTION) # -DUSE_TAGGING=false -DCACHE_INTEGER=false)
+add_definitions(-DDEFAULT_OMR_JIT_ON=false -DGC_TYPE=OMR_GARBAGE_COLLECTION) # -DUSE_TAGGING=false -DCACHE_INTEGER=false)
 #  was OMR_GARBAGE_COLLECTION
 
 add_executable(som
