@@ -67,7 +67,7 @@ uint8_t VMInvokable::GetSelectorCode(uint64_t card)
 {
    static uint8_t LAST_CODE = 0;
 
-   uint8_t code = LAST_CODE < 255 ? LAST_CODE++ : (uint8_t) (rand() % 256);
+   uint8_t code = LAST_CODE < 256UL ? LAST_CODE++ : (uint8_t) (rand() % 256);
    return code;
 }
 
