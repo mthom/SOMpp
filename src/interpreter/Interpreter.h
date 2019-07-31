@@ -74,8 +74,11 @@ private:
     void send(uint64_t card, uint64_t code, VMSymbol* signature, VMClass* receiverClass);
     VMInvokable* selectorMismatchHandler(VMSymbol* signature, VMClass* clazz, uint64_t card, 
 					 uint64_t code);
-    void doesNotUnderstandHandler(VMSymbol*);    
+    void doesNotUnderstandHandler(VMSymbol*);        
 
+    uint64_t getMethodCard();
+    uint8_t  getMethodCode();
+    
     void doDup();
     void doPushLocal(long bytecodeIndex);
     void doPushArgument(long bytecodeIndex);

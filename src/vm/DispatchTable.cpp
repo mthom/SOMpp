@@ -9,7 +9,7 @@ template <std::size_t N>
 DispatchTable<N> DispatchTable<N>::defaultDispatchTable {};
 
 template <std::size_t N>
-VMMethod DispatchTable<N>::selectorMismatchRaiser(0, 0, NewCard());
+VMInvokableStub DispatchTable<N>::selectorMismatchRaiser(NewCard());
 
 template <std::size_t N>
 VMInvokable*& DispatchTable<N>::operator [](uint64_t index)
@@ -23,7 +23,7 @@ void DispatchTable<N>::allocDispatchTable(DispatchTable<N>** table)
    static uint8_t LAST_UNUSED_TABLE = 0;
    static DispatchTable<N>** TABLE_CACHE[N];
 
-   if (LAST_UNUSED_TABLE < N) {
+   if (LAST_UNUSED_TABLE + 1 < N) {
       TABLE_CACHE[LAST_UNUSED_TABLE++] = table;
       *table = new DispatchTable<N>();
    } else {

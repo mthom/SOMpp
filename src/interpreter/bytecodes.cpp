@@ -39,8 +39,8 @@ const uint8_t Bytecode::bytecodeLengths[] = {
         3, // BC_POP_LOCAL
         3, // BC_POP_ARGUMENT
         2, // BC_POP_FIELD
-        2, // BC_SEND
-        2, // BC_SUPER_SEND
+        11, // BC_SEND
+        11, // BC_SUPER_SEND
         1, // BC_RETURN_LOCAL
         1, // BC_RETURN_NON_LOCAL
         5, // JUMP_IF_FALSE

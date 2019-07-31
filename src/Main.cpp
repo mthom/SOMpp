@@ -41,7 +41,8 @@
 #include "vmobjects/ObjectFormats.h"
 
 int main(int argc, char** argv) {
-
+    // seed the RNG for method dispatch.
+    srand(time(0));
     cout << "This is SOM++" << endl;
 
     if (GC_TYPE == GENERATIONAL)

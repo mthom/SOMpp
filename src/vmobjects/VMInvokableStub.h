@@ -1,3 +1,5 @@
+#pragma once
+
 /*
  *
  *
@@ -24,53 +26,13 @@
  THE SOFTWARE.
  */
 
-#include "DispatchTable.h"
-
 #include "VMInvokable.h"
-#include "VMSymbol.h"
-#include "VMClass.h"
 
-VMInvokable::VMInvokable(uint64_t card, long nof)
-  : VMObject(nof + 2)
-  , card(card)
-{}
+class VMInvokableStub: public VMInvokable {
+public:
+   VMInvokableStub(uint64_t card, long nof = 0)
+     : VMInvokable(card, nof)
+   {}
 
-bool VMInvokable::IsPrimitive() const {
-    return false;
-}
-
-VMSymbol* VMInvokable::GetSignature() const {
-    return load_ptr(signature);
-}
-
-void VMInvokable::SetSignature(VMSymbol* sig) {
-    store_ptr(signature, sig);
-}
-
-void VMInvokable::WalkObjects(walk_heap_fn walk) {
-    clazz     = static_cast<GCClass*>(walk(clazz));
-    signature = static_cast<GCSymbol*>(walk(signature));
-    if (holder) {
-        holder = static_cast<GCClass*>(walk(holder));
-    }
-}
-
-VMClass* VMInvokable::GetHolder() const {
-    return load_ptr(holder);
-}
-
-void VMInvokable::SetHolder(VMClass* hld) {
-    store_ptr(holder, hld);
-}
-
-uint8_t VMInvokable::GetSelectorCode(uint64_t card)
-{
-   static uint8_t LAST_CODE = 0;
-
-   uint8_t code = LAST_CODE < 255 ? LAST_CODE++ : (uint8_t) (rand() % 256);
-   return code;
-}
-
-uint64_t VMInvokable::GetCard() const {
-   return card;
-}
+   virtual void Invoke(Interpreter*, VMFrame*) {}
+};

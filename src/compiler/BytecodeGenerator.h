@@ -51,6 +51,7 @@ public:
     void EmitPOPFIELD(MethodGenerationContext* mgenc, VMSymbol* field);
     void EmitSEND(MethodGenerationContext* mgenc, VMSymbol* msg);
     void EmitSUPERSEND(MethodGenerationContext* mgenc, VMSymbol* msg);
+    void EmitCard(MethodGenerationContext* mgenc);
     void EmitRETURNLOCAL(MethodGenerationContext* mgenc);
     void EmitRETURNNONLOCAL(MethodGenerationContext* mgenc);
 

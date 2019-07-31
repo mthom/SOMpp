@@ -806,7 +806,9 @@ VMObject* Universe::InitializeGlobals() {
     symbolIfTrue  = _store_ptr(SymbolForChars("ifTrue:"));
     symbolIfFalse = _store_ptr(SymbolForChars("ifFalse:"));
 
-    compileAOTMethods();
+    if (enableJIT) {
+       compileAOTMethods();
+    }
 
     return systemObject;
 }

@@ -41,7 +41,9 @@ VMClass::VMClass() :
   , name(nullptr)
   , instanceFields(nullptr)
   , instanceInvokables(nullptr)
-{}
+{
+    dispatchTable = &DispatchTable<256>::defaultDispatchTable;
+}
 
 VMClass* VMClass::Clone() const {
     VMClass* clone = new (GetHeap<HEAP_CLS>(), objectSize - sizeof(VMClass) ALLOC_MATURE) VMClass(*this);
@@ -52,7 +54,9 @@ VMClass* VMClass::Clone() const {
 }
 
 VMClass::VMClass(long numberOfFields) :
-        VMObject(numberOfFields + VMClassNumberOfFields) {
+    VMObject(numberOfFields + VMClassNumberOfFields)
+{
+    dispatchTable = &DispatchTable<256>::defaultDispatchTable;
 }
 
 void VMClass::WalkObjects(walk_heap_fn walk) {

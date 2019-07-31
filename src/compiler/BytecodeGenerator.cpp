@@ -102,10 +102,24 @@ void BytecodeGenerator::EmitPOPFIELD(MethodGenerationContext* mgenc, VMSymbol* f
 
 void BytecodeGenerator::EmitSEND(MethodGenerationContext* mgenc, VMSymbol* msg) {
     EMIT2(BC_SEND, mgenc->FindLiteralIndex(msg));
+    EmitCard(mgenc);
+    EMIT1(0);
 }
 
 void BytecodeGenerator::EmitSUPERSEND(MethodGenerationContext* mgenc, VMSymbol* msg) {
     EMIT2(BC_SUPER_SEND, mgenc->FindLiteralIndex(msg));
+    EmitCard(mgenc);
+    EMIT1(0);    
+}
+
+void BytecodeGenerator::EmitCard(MethodGenerationContext* mgenc) {
+    uint64_t card = mgenc->GetCard();
+   
+    mgenc->AddBytecode(card);
+
+    for(int i = 0; i < 7; ++i) {
+      mgenc->AddBytecode(card >>= 8);
+    }
 }
 
 void BytecodeGenerator::EmitRETURNLOCAL(MethodGenerationContext* mgenc) {

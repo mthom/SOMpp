@@ -98,6 +98,22 @@ int Interpreter::runInterpreterLoop(Interpreter *interp) {
     return interp->Start();
 }
 
+uint64_t Interpreter::getMethodCard() {
+    uint64_t card = currentBytecodes[bytecodeIndexGlobal++];
+
+    for(int i = 0; i < 7; ++i) {
+      card <<= 8;
+      card &= currentBytecodes[bytecodeIndexGlobal++];
+    }
+
+    return card;
+}
+
+uint8_t Interpreter::getMethodCode() {
+    uint64_t code = currentBytecodes[bytecodeIndexGlobal++];
+    return code;
+}
+
 int Interpreter::Start() {
     // initialization
     method = GetFrame()->GetMethod();
@@ -138,7 +154,7 @@ int Interpreter::Start() {
       doDup();
       DISPATCH_NOGC();
 
-    LABEL_BC_PUSH_LOCAL:       
+    LABEL_BC_PUSH_LOCAL:
       PROLOGUE(3);
       doPushLocal(bytecodeIndexGlobal - 3);
       DISPATCH_NOGC();
@@ -189,8 +205,8 @@ int Interpreter::Start() {
       DISPATCH_NOGC();
 
     LABEL_BC_SEND:
-      PROLOGUE(2);
-      doSend(bytecodeIndexGlobal - 2);
+      PROLOGUE(11);
+      doSend(bytecodeIndexGlobal - 11);
 #if GC_TYPE == OMR_GARBAGE_COLLECTION
       if (GetReturnCount() > 0) {
           DecrementReturnCount();
@@ -200,8 +216,8 @@ int Interpreter::Start() {
       DISPATCH_GC();
 
     LABEL_BC_SUPER_SEND:
-      PROLOGUE(2);
-      doSuperSend(bytecodeIndexGlobal - 2);
+      PROLOGUE(11);
+      doSuperSend(bytecodeIndexGlobal - 11);
 #if GC_TYPE == OMR_GARBAGE_COLLECTION
       if (GetReturnCount() > 0) {
           DecrementReturnCount();
@@ -308,7 +324,7 @@ Interpreter::selectorMismatchHandler(VMSymbol* signature, VMClass* clazz, uint64
    }
 
    VMInvokable* method;
-   
+
    if ((method = clazz->LookupMethodByCard(card)) == nullptr) {
       doesNotUnderstandHandler(signature);
       return nullptr;
@@ -319,7 +335,7 @@ Interpreter::selectorMismatchHandler(VMSymbol* signature, VMClass* clazz, uint64
    clazz->GetDispatchTable()[currentCode] = method;
 
    if (currentCode != code) {
-     // instructionPointer[-1] = currentCode;
+      currentBytecodes[bytecodeIndexGlobal - 1] = currentCode;
    }
 
    return method;
@@ -329,7 +345,7 @@ void Interpreter::send(uint64_t card, uint64_t code, VMSymbol* signature, VMClas
 {
     VMInvokable* method = receiverClass->GetDispatchTable()[code];
 
-    if (method->GetCard() != card) {
+    if (!method || method->GetCard() != card) {
        method = selectorMismatchHandler(signature, receiverClass, card, code);
     }
 
@@ -352,7 +368,7 @@ void Interpreter::doesNotUnderstandHandler(VMSymbol* signature)
      argumentsArray->SetIndexableField(i, o);
    }
    vm_oop_t arguments[] = {signature, argumentsArray};
-        
+
    GetFrame()->Pop(); // pop the receiver
 
    //check if current frame is big enough for this unplanned Send
@@ -400,7 +416,7 @@ void Interpreter::send(VMSymbol* signature, VMClass* receiverClass) {
             argumentsArray->SetIndexableField(i, o);
         }
         vm_oop_t arguments[] = {signature, argumentsArray};
-        
+
         GetFrame()->Pop(); // pop the receiver
 
         //check if current frame is big enough for this unplanned Send
@@ -546,9 +562,10 @@ void Interpreter::doSend(long bytecodeIndex) {
     int numOfArgs = Signature::GetNumberOfArguments(signature);
 
     vm_oop_t receiver = GetFrame()->GetStackElement(numOfArgs-1);
+    
     assert(Universe::IsValidObject(receiver));
     assert(dynamic_cast<VMClass*>(CLASS_OF(receiver)) != nullptr); // make sure it is really a class
-    
+
     VMClass* receiverClass = CLASS_OF(receiver);
 
 #if GC_TYPE == OMR_GARBAGE_COLLECTION
@@ -561,7 +578,10 @@ void Interpreter::doSend(long bytecodeIndex) {
     GetUniverse()->receiverTypes[receiverClass->GetName()->GetStdString()]++;
 #endif
 
-    send(0, 0, signature, receiverClass); //TODO: change to meaningful values!
+    uint64_t card = *(uint64_t*) (currentBytecodes + bytecodeIndex + 2);
+    uint8_t code  = currentBytecodes[bytecodeIndex+2+sizeof(uint64_t)];
+    
+    send(card, code, signature, receiverClass);
 }
 
 void Interpreter::doSuperSend(long bytecodeIndex) {
@@ -572,8 +592,13 @@ void Interpreter::doSuperSend(long bytecodeIndex) {
     VMClass* holder = realMethod->GetHolder();
     VMClass* super = holder->GetSuperClass();
 
-    send(0, 0, signature, super);
+    uint64_t card = (uint64_t) currentBytecodes[bytecodeIndexGlobal];
+    uint8_t  code = currentBytecodes[bytecodeIndexGlobal+sizeof(uint64_t)];
+
+    bytecodeIndexGlobal += sizeof(uint64_t) + sizeof(uint8_t);
     
+    send(card, code, signature, super);
+
     //    VMInvokable* invokable = static_cast<VMInvokable*>(super->LookupInvokable(signature));
     /*
     if (invokable != nullptr)
@@ -611,7 +636,7 @@ void Interpreter::doReturnNonLocal() {
         vm_oop_t arguments[] = {block};
 
         popFrame();
-        
+
         // Pop old arguments from stack
         VMMethod* method = GetFrame()->GetMethod();
         long numberOfArgs = method->GetNumberOfArguments();
@@ -689,9 +714,9 @@ void Interpreter::doJump(long bytecodeIndex) {
 
 void Interpreter::WalkGlobals(walk_heap_fn walk) {
   // #warning method and frame are stored as VMptrs, is that acceptable? Is the solution here with _store_ptr and load_ptr robust?
-    
+
     method = load_ptr(static_cast<GCMethod*>(walk(_store_ptr(method))));
-    
+
     // Get the current frame and mark it.
     // Since marking is done recursively, this automatically
     // marks the whole stack

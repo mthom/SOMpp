@@ -59,9 +59,6 @@ public:
     static uint8_t GetSelectorCode(uint64_t card);
 
 protected:
-    static std::map<uint64_t, uint8_t> cardCodeMap; // card --> code, unbounded! as many keys as there are selectors.
-    static uint64_t codeCardMap[256]; // code --> card, bounded!
-    
     GCSymbol* signature;
     GCClass*  holder;
     uint64_t  card;

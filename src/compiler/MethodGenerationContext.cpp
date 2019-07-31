@@ -119,6 +119,10 @@ size_t MethodGenerationContext::GetNumberOfArguments() {
     return arguments.Size();
 }
 
+uint64_t MethodGenerationContext::GetCard() const {
+    return card;
+}
+
 uint8_t MethodGenerationContext::ComputeStackDepth() {
     uint8_t depth = 0;
     uint8_t maxDepth = 0;
@@ -167,7 +171,7 @@ uint8_t MethodGenerationContext::ComputeStackDepth() {
             depth -= Signature::GetNumberOfArguments(sig);
 
             depth++; // return value
-            i += 2;
+            i += 11;
             break;
         }
         case BC_RETURN_LOCAL:

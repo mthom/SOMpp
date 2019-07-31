@@ -1,5 +1,6 @@
 #pragma once
 
+#include "../vmobjects/VMInvokableStub.h"
 #include "../vmobjects/VMMethod.h"
 
 uint64_t NewCard();
@@ -17,7 +18,7 @@ private:
   DispatchTable() {};
 
   VMInvokable* _entries[N];
-  static VMMethod selectorMismatchRaiser;
+  static VMInvokableStub selectorMismatchRaiser;
 };
 
 template <std::size_t N>

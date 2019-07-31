@@ -52,6 +52,8 @@ public:
     
     uint8_t GetFieldIndex(VMSymbol* field);
 
+    uint64_t GetCard() const;
+
     void SetHolder(ClassGenerationContext* holder);
     void SetOuter(MethodGenerationContext* outer);
     void SetIsBlockMethod(bool isBlock = true);
