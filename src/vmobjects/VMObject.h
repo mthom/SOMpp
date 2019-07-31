@@ -62,7 +62,7 @@
 // how many FIELDS the VMObject subobject will have at compile time.
 // They will therefore stamp their own C++ fields over the previous
 // locations of the FIELDS array, which obstructs GC. 
-#define FIELDS (((gc_oop_t*)&clazz) + 1)
+#define FIELDS (((gc_oop_t*)&clazz) + fieldsOffset())
 
 class VMObject: public AbstractVMObject {
 
@@ -116,7 +116,11 @@ public:
       }
 
       return fields;
-    }    
+    }
+
+    virtual long fieldsOffset() const {
+      return 1;
+    }
     
 protected:      
     inline long GetAdditionalSpaceConsumption() const;
@@ -126,6 +130,7 @@ protected:
     size_t objectSize;     // set by the heap at allocation time
     long   numberOfFields;
 
+    
     GCClass* clazz;
 
     // Start of fields. All members beyond after clazz are indexable.

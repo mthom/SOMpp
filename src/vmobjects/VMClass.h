@@ -55,7 +55,7 @@ public:
 
     DispatchTable<256>&  GetDispatchTable();
     DispatchTable<256>** GetAddressOfDispatchTable();
-    VMInvokable* LookupMethodByCard(uint64_t);
+    VMInvokable*         LookupMethodByCard(uint64_t);
 
     inline VMClass*     GetSuperClass() const;
     inline void         SetSuperClass(VMClass*);
@@ -80,33 +80,37 @@ public:
     virtual VMClass*    Clone() const;
            void         WalkObjects(walk_heap_fn walk);
 
+    virtual long fieldsOffset() const {
+        return 8;
+    }
+
     virtual void MarkObjectAsInvalid();
 
     virtual StdString AsDebugString() const;
 
     std::vector<fomrobject_t*> GetFieldPtrs() {
-      std::vector<fomrobject_t*> fields{ VMObject::GetFieldPtrs() };
+        std::vector<fomrobject_t*> fields{ VMObject::GetFieldPtrs() };
+	
+	if (dispatchTable != &DispatchTable<256>::defaultDispatchTable) {
+	   fields.push_back((fomrobject_t*) &dispatchTable);
+	}
 
-      fields.push_back((fomrobject_t*) &superClass);
-      fields.push_back((fomrobject_t*) &name);
-      fields.push_back((fomrobject_t*) &instanceFields);
-      fields.push_back((fomrobject_t*) &instanceInvokables);
-
-      return fields;
+	return fields;
     }
 
 private:
     bool hasPrimitivesFor(const StdString& cl) const;
     void setPrimitives(const StdString& cname, bool classSide);
     long numberOfSuperInstanceFields() const;
+    
+    std::map<uint64_t, VMInvokable*> cardMethodMap;
+
+    DispatchTable<256>* dispatchTable;
 
     GCClass* superClass;
     GCSymbol* name;
     GCArray* instanceFields;
     GCArray* instanceInvokables;
-
-    std::map<uint64_t, VMInvokable*> cardMethodMap;
-    DispatchTable<256>* dispatchTable;
 
     static const long VMClassNumberOfFields;
 };

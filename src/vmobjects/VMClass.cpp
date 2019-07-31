@@ -95,7 +95,6 @@ bool VMClass::AddInstanceInvokable(VMInvokable* ptr) {
             if (ptr->GetSignature() == inv->GetSignature()) {
 	        cardMethodMap[ptr->GetCard()] = ptr;
                 SetInstanceInvokable(i, ptr);
-
                 return false;
             }
         } else {
@@ -139,6 +138,7 @@ void VMClass::SetInstanceInvokables(VMArray* invokables) {
         if (invo != nil) {
             //not Nil, so this actually is an invokable
             VMInvokable* inv = (VMInvokable*) invo;
+	    cardMethodMap[inv->GetCard()] = inv;
             inv->SetHolder(this);
         }
     }
@@ -255,6 +255,8 @@ void VMClass::setPrimitives(const StdString& cname, bool classSide) {
         long numInvokables = current->GetNumberOfInstanceInvokables();
         for (long i = 0; i < numInvokables; i++) {
             VMInvokable* anInvokable = current->GetInstanceInvokable(i);
+	    cardMethodMap[anInvokable->GetCard()] = anInvokable;
+	    
 #ifdef __DEBUG
             Universe::ErrorPrint("cname: >" + cname + "<\n" +
                                  anInvokable->GetSignature()->GetStdString() + "\n");

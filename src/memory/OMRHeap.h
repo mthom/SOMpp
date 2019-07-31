@@ -11,11 +11,15 @@
 #include "../../omr/include_core/omr.h"
 #include "../../omrglue/LanguageThreadLocalHeapStruct.h"
 
+template <std::size_t N> class DispatchTable;
+
 class OMRHeap : public Heap<OMRHeap> {
     friend class OMRCollector;
 public:
     OMRHeap(long objectSpaceSize = 1048576);
     AbstractVMObject* AllocateObject(size_t size);
+    DispatchTable<256>* AllocateDispatchTable(size_t size);
+
     void writeBarrier(AbstractVMObject* holder, vm_oop_t referencedObject);
     long getHeapSize() {return heapSize;}
     SOM_VM *getVM() {return &vm;}

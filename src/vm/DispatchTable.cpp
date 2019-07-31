@@ -12,7 +12,7 @@ template <std::size_t N>
 VMInvokableStub DispatchTable<N>::selectorMismatchRaiser(NewCard());
 
 template <std::size_t N>
-VMInvokable*& DispatchTable<N>::operator [](uint64_t index)
+VMInvokable*& DispatchTable<N>::operator [](uint8_t index)
 {
    return _entries[index];
 }
@@ -21,11 +21,11 @@ template <std::size_t N>
 void DispatchTable<N>::allocDispatchTable(DispatchTable<N>** table)
 {
    static uint8_t LAST_UNUSED_TABLE = 0;
-   static DispatchTable<N>** TABLE_CACHE[N];
+   static DispatchTable<N>** TABLE_CACHE[N] = {};
 
    if (LAST_UNUSED_TABLE + 1 < N) {
       TABLE_CACHE[LAST_UNUSED_TABLE++] = table;
-      *table = new DispatchTable<N>();
+      *table = new (GetHeap<HEAP_CLS>()) DispatchTable<N>();
    } else {
       // randomly select a victim class and steal its table!
       auto index = rand() % N;

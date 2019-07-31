@@ -16,6 +16,7 @@ public:
     inline size_t GetGCField() const;
     inline void SetGCField(size_t);
 
+    virtual size_t GetObjectSize() const = 0;
     virtual std::vector<fomrobject_t*> GetFieldPtrs() = 0;
     
     friend class GC_ObjectModelDelegate;

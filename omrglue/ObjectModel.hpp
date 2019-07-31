@@ -174,7 +174,7 @@ public:
 		if (IS_TAGGED(objectPtr)) {
 			return 0;
 		} else {
-			AbstractVMObject* o = (AbstractVMObject*)(objectPtr);
+			VMObjectBase* o = (VMObjectBase*)(objectPtr);
 			return o->GetObjectSize();
 		}
 	}
