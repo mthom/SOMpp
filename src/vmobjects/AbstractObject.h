@@ -43,7 +43,6 @@ public:
     virtual VMClass* GetClass() const = 0;
     virtual AbstractVMObject* Clone() const = 0;
     virtual void Send(Interpreter*, StdString, vm_oop_t*, long);
-    virtual size_t GetObjectSize() const = 0;
     
     virtual void MarkObjectAsInvalid() = 0;
     

@@ -27,6 +27,8 @@
 #include <sstream>
 #include <string.h>
 
+#include "../vm/DispatchTable.h"
+
 #include "VMSymbol.h"
 #include "VMInteger.h"
 #include "Signature.h"
@@ -34,7 +36,9 @@
 extern GCClass* symbolClass;
 
 VMSymbol::VMSymbol(const char* str) :
-  numberOfArgumentsOfSignature(Signature::DetermineNumberOfArguments(str)) {
+  numberOfArgumentsOfSignature(Signature::DetermineNumberOfArguments(str)),
+  card(NewCard())
+{
     nextCachePos = 0;
     // set the chars-pointer to point at the position of the first character
     chars = (char*) &cachedInvokable + +3 * sizeof(VMInvokable*);
@@ -48,7 +52,9 @@ VMSymbol::VMSymbol(const char* str) :
 }
 
 VMSymbol::VMSymbol(const StdString& s) :
-  numberOfArgumentsOfSignature(Signature::DetermineNumberOfArguments(s.c_str())) {
+  numberOfArgumentsOfSignature(Signature::DetermineNumberOfArguments(s.c_str())),
+  card(NewCard())
+{
     VMSymbol(s.c_str());
 }
 

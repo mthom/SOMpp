@@ -31,8 +31,15 @@
 class VMInvokableStub: public VMInvokable {
 public:
    VMInvokableStub(uint64_t card, long nof = 0)
-     : VMInvokable(card, nof)
+     : VMInvokable(nof), card(card)
    {}
 
    virtual void Invoke(Interpreter*, VMFrame*) {}
+
+   uint64_t GetCard() const {
+       return card;
+   }
+   
+private:
+   uint64_t card;
 };

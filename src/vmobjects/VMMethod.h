@@ -51,7 +51,7 @@ class VMMethod: public VMInvokable {
 public:
     typedef GCMethod Stored;
 
-    VMMethod(long bcCount, long numberOfConstants, uint64_t card, long nof = 0);
+    VMMethod(long bcCount, long numberOfConstants, long nof = 0);
 
     inline  long      GetNumberOfLocals() const;
             void      SetNumberOfLocals(long nol);

@@ -325,7 +325,7 @@ Interpreter::selectorMismatchHandler(VMSymbol* signature, VMClass* clazz, uint64
 
    VMInvokable* method;
 
-   if ((method = clazz->LookupMethodByCard(card)) == nullptr) {
+   if ((method = clazz->LookupMethodByCardOrSignature(card, signature)) == nullptr) {
       doesNotUnderstandHandler(signature);
       return nullptr;
    }
@@ -340,8 +340,57 @@ Interpreter::selectorMismatchHandler(VMSymbol* signature, VMClass* clazz, uint64
 
    return method;
 }
+/*
+void Interpreter::send(uint64_t, uint64_t, VMSymbol* signature, VMClass* receiverClass) {
+    VMInvokable* invokable = receiverClass->LookupInvokable(signature);
 
-void Interpreter::send(uint64_t card, uint64_t code, VMSymbol* signature, VMClass* receiverClass)
+    if (invokable != nullptr) {
+#ifdef LOG_RECEIVER_TYPES
+        StdString name = receiverClass->GetName()->GetStdString();
+        if (GetUniverse()->callStats.find(name) == GetUniverse()->callStats.end())
+        GetUniverse()->callStats[name] = {0,0};
+        GetUniverse()->callStats[name].noCalls++;
+        if (invokable->IsPrimitive())
+        GetUniverse()->callStats[name].noPrimitiveCalls++;
+#endif
+        // since an invokable is able to change/use the frame, we have to write
+        // cached values before, and read cached values after calling
+        GetFrame()->SetBytecodeIndex(bytecodeIndexGlobal);
+        invokable->Invoke(this, GetFrame());
+        bytecodeIndexGlobal = GetFrame()->GetBytecodeIndex();
+    } else {
+        //doesNotUnderstand
+        long numberOfArgs = Signature::GetNumberOfArguments(signature);
+
+        vm_oop_t receiver = GetFrame()->GetStackElement(numberOfArgs-1);
+
+        VMArray* argumentsArray = GetUniverse()->NewArray(numberOfArgs - 1); // without receiver
+
+        // the receiver should not go into the argumentsArray
+        // so, numberOfArgs - 2
+        for (long i = numberOfArgs - 2; i >= 0; --i) {
+            vm_oop_t o = GetFrame()->Pop();
+            argumentsArray->SetIndexableField(i, o);
+        }
+        vm_oop_t arguments[] = {signature, argumentsArray};
+        
+        GetFrame()->Pop(); // pop the receiver
+
+        //check if current frame is big enough for this unplanned Send
+        //doesNotUnderstand: needs 3 slots, one for this, one for method name, one for args
+        long additionalStackSlots = 3 - GetFrame()->RemainingStackSize();
+        if (additionalStackSlots > 0) {
+            GetFrame()->SetBytecodeIndex(bytecodeIndexGlobal);
+            //copy current frame into a bigger one and replace the current frame
+            SetFrame(VMFrame::EmergencyFrameFrom(GetFrame(), additionalStackSlots));
+        }
+
+        AS_OBJ(receiver)->Send(this, doesNotUnderstand, arguments, 2);
+    }
+}
+*/
+
+VMInvokable* Interpreter::findMethod(uint64_t card, uint8_t code, VMSymbol* signature, VMClass* receiverClass)
 {
     VMInvokable* method = receiverClass->GetDispatchTable()[code];
 
@@ -349,9 +398,7 @@ void Interpreter::send(uint64_t card, uint64_t code, VMSymbol* signature, VMClas
        method = selectorMismatchHandler(signature, receiverClass, card, code);
     }
 
-    if (method != nullptr) {
-       method->Invoke(this, GetFrame());
-    }
+    return method;
 }
 
 void Interpreter::doesNotUnderstandHandler(VMSymbol* signature)
@@ -375,9 +422,9 @@ void Interpreter::doesNotUnderstandHandler(VMSymbol* signature)
    //doesNotUnderstand: needs 3 slots, one for this, one for method name, one for args
    long additionalStackSlots = 3 - GetFrame()->RemainingStackSize();
    if (additionalStackSlots > 0) {
-     GetFrame()->SetBytecodeIndex(bytecodeIndexGlobal);
-     //copy current frame into a bigger one and replace the current frame
-     SetFrame(VMFrame::EmergencyFrameFrom(GetFrame(), additionalStackSlots));
+      GetFrame()->SetBytecodeIndex(bytecodeIndexGlobal);
+      //copy current frame into a bigger one and replace the current frame
+      SetFrame(VMFrame::EmergencyFrameFrom(GetFrame(), additionalStackSlots));
    }
 
    AS_OBJ(receiver)->Send(this, doesNotUnderstand, arguments, 2);
@@ -558,7 +605,6 @@ void Interpreter::doPopField(long bytecodeIndex) {
 
 void Interpreter::doSend(long bytecodeIndex) {
     VMSymbol* signature = static_cast<VMSymbol*>(method->GetConstant(bytecodeIndex));
-
     int numOfArgs = Signature::GetNumberOfArguments(signature);
 
     vm_oop_t receiver = GetFrame()->GetStackElement(numOfArgs-1);
@@ -581,7 +627,13 @@ void Interpreter::doSend(long bytecodeIndex) {
     uint64_t card = *(uint64_t*) (currentBytecodes + bytecodeIndex + 2);
     uint8_t code  = currentBytecodes[bytecodeIndex+2+sizeof(uint64_t)];
     
-    send(card, code, signature, receiverClass);
+    VMInvokable* invokable = findMethod(card, code, signature, receiverClass);
+
+    if (invokable != nullptr) {
+       GetFrame()->SetBytecodeIndex(bytecodeIndexGlobal);
+       invokable->Invoke(this, GetFrame());
+       bytecodeIndexGlobal = GetFrame()->GetBytecodeIndex();
+    }
 }
 
 void Interpreter::doSuperSend(long bytecodeIndex) {
@@ -592,15 +644,11 @@ void Interpreter::doSuperSend(long bytecodeIndex) {
     VMClass* holder = realMethod->GetHolder();
     VMClass* super = holder->GetSuperClass();
 
-    uint64_t card = (uint64_t) currentBytecodes[bytecodeIndexGlobal];
-    uint8_t  code = currentBytecodes[bytecodeIndexGlobal+sizeof(uint64_t)];
+    uint64_t card = *(uint64_t*) (currentBytecodes + bytecodeIndex + 2);
+    uint8_t code  = currentBytecodes[bytecodeIndex+2+sizeof(uint64_t)];
 
-    bytecodeIndexGlobal += sizeof(uint64_t) + sizeof(uint8_t);
+    VMInvokable* invokable = findMethod(card, code, signature, super);
     
-    send(card, code, signature, super);
-
-    //    VMInvokable* invokable = static_cast<VMInvokable*>(super->LookupInvokable(signature));
-    /*
     if (invokable != nullptr)
         invokable->Invoke(this, GetFrame());
     else {
@@ -615,7 +663,7 @@ void Interpreter::doSuperSend(long bytecodeIndex) {
         vm_oop_t arguments[] = {signature, argumentsArray};
 
         AS_OBJ(receiver)->Send(this, doesNotUnderstand, arguments, 2);
-	}*/
+    }
 }
 
 void Interpreter::doReturnLocal() {

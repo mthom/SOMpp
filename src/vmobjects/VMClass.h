@@ -34,7 +34,7 @@
 #include <misc/defs.h>
 
 #if defined(_MSC_VER)   //Visual Studio
-#include <windows.h>
+#include <windows.h> 
 #include "../primitives/Core.h"
 #endif
 
@@ -43,19 +43,12 @@ class ClassGenerationContext;
 class VMClass: public VMObject {
 public:
     typedef GCClass Stored;
-
+    
     VMClass();
     VMClass(long numberOfFields);
 
-    virtual ~VMClass() {
-      if (dispatchTable && dispatchTable != &DispatchTable<256>::defaultDispatchTable) {
-	 delete dispatchTable;
-      }
-    }
-
     DispatchTable<256>&  GetDispatchTable();
     DispatchTable<256>** GetAddressOfDispatchTable();
-    VMInvokable*         LookupMethodByCard(uint64_t);
 
     inline VMClass*     GetSuperClass() const;
     inline void         SetSuperClass(VMClass*);
@@ -79,13 +72,10 @@ public:
            void         LoadPrimitives(const vector<StdString>&);
     virtual VMClass*    Clone() const;
            void         WalkObjects(walk_heap_fn walk);
-
-    virtual long fieldsOffset() const {
-        return 8;
-    }
-
+    
     virtual void MarkObjectAsInvalid();
 
+    VMInvokable* LookupMethodByCardOrSignature(uint64_t card, VMSymbol* signature);
     virtual StdString AsDebugString() const;
 
     std::vector<fomrobject_t*> GetFieldPtrs() {
@@ -98,15 +88,18 @@ public:
 	return fields;
     }
 
+    virtual long fieldsOffset() const {
+        return 8;
+    }
+    
 private:
     bool hasPrimitivesFor(const StdString& cl) const;
     void setPrimitives(const StdString& cname, bool classSide);
     long numberOfSuperInstanceFields() const;
-    
-    std::map<uint64_t, VMInvokable*> cardMethodMap;
 
     DispatchTable<256>* dispatchTable;
-
+    std::map<uint64_t, VMInvokable*> cardMethodMap;
+    
     GCClass* superClass;
     GCSymbol* name;
     GCArray* instanceFields;

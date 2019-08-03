@@ -316,7 +316,7 @@ Universe::Universe() {
 }
 
 VMMethod* Universe::createBootstrapMethod(VMClass* holder, long numArgsOfMsgSend) {
-    VMMethod* bootstrapMethod = NewMethod(NewCard(), SymbolForChars("bootstrap"), 1, 0);
+    VMMethod* bootstrapMethod = NewMethod(SymbolForChars("bootstrap"), 1, 0);
     bootstrapMethod->SetBytecode(0, BC_HALT);
     bootstrapMethod->SetNumberOfLocals(0);
     bootstrapMethod->SetMaximumNumberOfStackElements(numArgsOfMsgSend);
@@ -327,7 +327,7 @@ VMMethod* Universe::createBootstrapMethod(VMClass* holder, long numArgsOfMsgSend
 #if GC_TYPE == OMR_GARBAGE_COLLECTION
 void Universe::compileAOTMethods() {
    uint32_t rc = 0;
-   
+
    for (auto& methodStub : aotMethodQueue) {
      OMR::JitBuilder::TypeDictionary types;
 
@@ -342,11 +342,11 @@ void Universe::compileAOTMethods() {
 	 char* signature = otherStub->GetSignature()->GetChars();
 
 //	 char* methodName = new char[64];
-	 
+
 //	 sprintf(methodName, "%s>>#%s", className, signature);
-	 
+
 	 std::cout << "adding " << signature << "\n";
-	 
+
 	 methodBuilder.defineFunction(signature);
      }
 
@@ -503,7 +503,7 @@ void Universe::initialize(long _argc, char** _argv) {
     allocationStats["VMArray"] = {0,0};
 #endif
 
-    heapSize = 1 * 1024 * 1024;
+    heapSize = 1024 * 1024;
 
     vector<StdString> argv = handleArguments(_argc, _argv);
 
@@ -566,23 +566,12 @@ void Universe::initialize(long _argc, char** _argv) {
         dumpBytecodes = 1;
 
     VMArray* argumentsArray = NewArrayFromStrings(argv);
-
     VMFrame* bootstrapFrame = interpreter->PushNewFrame(bootstrapMethod);
+
     bootstrapFrame->Push(systemObject);
     bootstrapFrame->Push(argumentsArray);
 
-//#if GC_TYPE == OMR_GARBAGE_COLLECTION
-//    OMRPORT_ACCESS_FROM_OMRVM(vm->omrVM);
-//    RootEntry* entry = (RootEntry*) omrmem_allocate_memory(sizeof(RootEntry), OMRMEM_CATEGORY_UNKNOWN);
-//
-//    entry->name = "bootstrapFrame";
-//    entry->rootPtr = (omrobjectptr_t) bootstrapFrame;
-//
-//    hashTableAdd(vm->rootTable, entry);
-//#endif
-
-    VMInvokable* initialize = load_ptr(systemClass)->LookupInvokable(
-                                            SymbolForChars("initialize:"));
+    VMInvokable* initialize = load_ptr(systemClass)->LookupInvokable(SymbolForChars("initialize:"));
     initialize->Invoke(interpreter, bootstrapFrame);
 
     // reset "-d" indicator
@@ -706,7 +695,9 @@ Universe::~Universe() {
 
         VMMethod* mth = new (GetHeap<HEAP_CLS>()) VMMethod(0, 0, 0);
         vt_method     = *(void**) mth;
-        vt_object     = *(void**) nilObject;
+
+	VMObject* obj = new (GetHeap<HEAP_CLS>()) VMObject;
+        vt_object     = *(void**) obj; //nilObject;
 
         VMPrimitive* prm = new (GetHeap<HEAP_CLS>()) VMPrimitive(className);
         vt_primitive  = *(void**) prm;
@@ -724,7 +715,7 @@ VMObject* Universe::InitializeGlobals() {
 
     //
     //allocate nil object
-    //
+    //    
     VMObject* nil = new (GetHeap<HEAP_CLS>()) VMObject;
     nilObject = _store_ptr(nil);
     nil->SetClass((VMClass*) nil);
@@ -759,7 +750,7 @@ VMObject* Universe::InitializeGlobals() {
     // Fix up objectClass
     load_ptr(objectClass)->SetSuperClass((VMClass*) nil);
 
-    obtain_vtables_of_known_classes(nil->GetClass()->GetName());
+    obtain_vtables_of_known_classes(load_ptr(nilClass)->GetName());
 
 #if USE_TAGGING
     GlobalBox::updateIntegerBox(NewInteger(1));
@@ -926,7 +917,7 @@ VMClass* Universe::LoadClassBasic(VMSymbol* name, VMClass* systemClass) {
         SourcecodeCompiler compiler;
         result = compiler.CompileClass(*i, name->GetStdString(), systemClass);
         if (result) {
-            if (dumpBytecodes) {
+	  if (dumpBytecodes) {
                 Disassembler::Dump(result->GetClass());
                 Disassembler::Dump(result);
             }
@@ -954,9 +945,9 @@ void Universe::LoadSystemClass(VMClass* systemClass) {
     }
 
     if (result->HasPrimitives() || result->GetClass()->HasPrimitives())
-        result->LoadPrimitives(classPath);
+       result->LoadPrimitives(classPath);
 
-    enqueueAOTMethods(systemClass);
+    //    enqueueAOTMethods(systemClass);
 }
 
 VMArray* Universe::NewArray(long size) const {
@@ -1212,7 +1203,7 @@ void Universe::WalkGlobals(walk_heap_fn walk) {
 }
 
 VMMethod*
-Universe::NewMethod(uint64_t card, VMSymbol* signature, size_t numberOfBytecodes, size_t numberOfConstants) const
+Universe::NewMethod(VMSymbol* signature, size_t numberOfBytecodes, size_t numberOfConstants) const
 {
     //Method needs space for the bytecodes and the pointers to the constants
     long additionalBytes = PADDED_SIZE(numberOfBytecodes + numberOfConstants * sizeof(VMObject*));
@@ -1224,7 +1215,7 @@ Universe::NewMethod(uint64_t card, VMSymbol* signature, size_t numberOfBytecodes
     // include fields as well!
 
     VMMethod* result = new (GetHeap<HEAP_CLS>(), additionalBytes)
-    VMMethod(numberOfBytecodes, numberOfConstants, card);
+    VMMethod(numberOfBytecodes, numberOfConstants);
 //#endif
     result->SetClass(load_ptr(methodClass));
 

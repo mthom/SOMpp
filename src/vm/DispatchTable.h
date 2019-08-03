@@ -53,7 +53,9 @@ public:
   }
 
 private:
-  DispatchTable(): _entries{} {}
+  DispatchTable(): _entries{} {
+      gcfield = 0;
+  }
 
   VMInvokable* _entries[N];
   static VMInvokableStub selectorMismatchRaiser;

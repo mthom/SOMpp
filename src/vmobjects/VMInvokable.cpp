@@ -30,9 +30,8 @@
 #include "VMSymbol.h"
 #include "VMClass.h"
 
-VMInvokable::VMInvokable(uint64_t card, long nof)
+VMInvokable::VMInvokable(long nof)
   : VMObject(nof + 2)
-  , card(card)
 {}
 
 bool VMInvokable::IsPrimitive() const {
@@ -72,5 +71,5 @@ uint8_t VMInvokable::GetSelectorCode(uint64_t card)
 }
 
 uint64_t VMInvokable::GetCard() const {
-   return card;
+   return ((VMSymbol*) signature)->GetCard();
 }

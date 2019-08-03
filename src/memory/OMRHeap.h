@@ -16,7 +16,7 @@ template <std::size_t N> class DispatchTable;
 class OMRHeap : public Heap<OMRHeap> {
     friend class OMRCollector;
 public:
-    OMRHeap(long objectSpaceSize = 1048576);
+    OMRHeap(long objectSpaceSize = 8 * 1048576);
     AbstractVMObject* AllocateObject(size_t size);
     DispatchTable<256>* AllocateDispatchTable(size_t size);
 

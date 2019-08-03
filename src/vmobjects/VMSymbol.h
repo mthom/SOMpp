@@ -58,11 +58,17 @@ public:
       return fields;
     }
 
+    uint64_t GetCard() const {
+      return card;
+    }
+
 private:
     const int numberOfArgumentsOfSignature;
     const GCClass* cachedClass_invokable[3];
     long nextCachePos;
     GCInvokable* cachedInvokable[3];
+    const uint64_t card;
+    
     inline VMInvokable* GetCachedInvokable(const VMClass*) const;
     inline void UpdateCachedInvokable(const VMClass* cls, VMInvokable* invo);
 

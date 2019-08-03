@@ -43,7 +43,7 @@ public:
     }
 
  public:
-    VMInvokable(uint64_t card, long nof = 0);
+    VMInvokable(long nof = 0);
             
     virtual void      Invoke(Interpreter*, VMFrame*) = 0;
 
@@ -53,7 +53,8 @@ public:
             VMClass*  GetHolder() const;
     virtual void      SetHolder(VMClass* hld);
 
-    uint64_t GetCard() const;
+    virtual uint64_t  GetCard() const;
+
     void WalkObjects(walk_heap_fn);
 
     static uint8_t GetSelectorCode(uint64_t card);
@@ -61,5 +62,4 @@ public:
 protected:
     GCSymbol* signature;
     GCClass*  holder;
-    uint64_t  card;
 };

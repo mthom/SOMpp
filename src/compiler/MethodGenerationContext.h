@@ -52,8 +52,6 @@ public:
     
     uint8_t GetFieldIndex(VMSymbol* field);
 
-    uint64_t GetCard() const;
-
     void SetHolder(ClassGenerationContext* holder);
     void SetOuter(MethodGenerationContext* outer);
     void SetIsBlockMethod(bool isBlock = true);
@@ -90,5 +88,4 @@ private:
     ExtendedList<vm_oop_t> literals;
     bool finished;
     std::vector<uint8_t> bytecode;
-    uint64_t card;
 };
