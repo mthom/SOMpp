@@ -87,10 +87,6 @@ public:
 
 	return fields;
     }
-
-    virtual long fieldsOffset() const {
-        return 8;
-    }
     
 private:
     bool hasPrimitivesFor(const StdString& cl) const;

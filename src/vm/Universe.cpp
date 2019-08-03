@@ -503,7 +503,7 @@ void Universe::initialize(long _argc, char** _argv) {
     allocationStats["VMArray"] = {0,0};
 #endif
 
-    heapSize = 1024 * 1024;
+    heapSize = 8 * 1024 * 1024;
 
     vector<StdString> argv = handleArguments(_argc, _argv);
 

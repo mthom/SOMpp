@@ -33,9 +33,12 @@
 // clazz is the only field of VMObject so
 const long VMObject::VMObjectNumberOfFields = 0;
 
-VMObject::VMObject(long numberOfFields) {
+VMObject::VMObject(long numberOfFields, long fieldsOffset)
+  : fieldsOffset(fieldsOffset)
+{
     // this line would be needed if the VMObject** is used instead of the macro:
     // FIELDS = (VMObject**)&clazz;
+   
     SetNumberOfFields(numberOfFields + VMObjectNumberOfFields);
     hash = (size_t) this;
     // Object size was already set by the heap on allocation

@@ -33,11 +33,10 @@
 
 #include <primitivesCore/PrimitiveLoader.h>
 
-
 const long VMClass::VMClassNumberOfFields = 4;
 
 VMClass::VMClass() :
-        VMObject(VMClassNumberOfFields), superClass(nullptr), name(nullptr), instanceFields(
+  VMObject(VMClassNumberOfFields, 8), superClass(nullptr), name(nullptr), instanceFields(
                 nullptr), instanceInvokables(nullptr) {
     dispatchTable = &DispatchTable<256>::defaultDispatchTable;
 }
@@ -51,7 +50,7 @@ VMClass* VMClass::Clone() const {
 }
 
 VMClass::VMClass(long numberOfFields) :
-        VMObject(numberOfFields + VMClassNumberOfFields) {
+  VMObject(numberOfFields + VMClassNumberOfFields, 8) {
    dispatchTable = &DispatchTable<256>::defaultDispatchTable;
 }
 
