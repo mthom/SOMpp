@@ -373,6 +373,7 @@ SOMppMethod::defineVMFrameStructure(OMR::JitBuilder::TypeDictionary *types)
 	types->DefineField("VMFrame", "hash",  types->toIlType<long>());
 	types->DefineField("VMFrame", "objectSize",  types->toIlType<size_t>());
 	types->DefineField("VMFrame", "numberOfFields", types->toIlType<long>());
+	types->DefineField("VMFrame", "fieldsOffset", types->toIlType<const long>());
 	types->DefineField("VMFrame", "clazz", pInt64);
 	types->DefineField("VMFrame", "previousFrame", pInt64);
 	types->DefineField("VMFrame", "context", pInt64);
@@ -401,6 +402,7 @@ SOMppMethod::defineVMObjectStructure(OMR::JitBuilder::TypeDictionary *types)
 	types->DefineField("VMObject", "hash", Int64);
 	types->DefineField("VMObject", "objectSize", Int64);
 	types->DefineField("VMObject", "numberOfFields", Int64);
+	types->DefineField("VMObject", "fieldsOffset", Int64);
 	types->DefineField("VMObject", "clazz", pInt64);
 
 	for (int i = 0; i < FIELDNAMES_LENGTH; i++) {
@@ -792,33 +794,33 @@ SOMppMethod::doSend(OMR::JitBuilder::BytecodeBuilder *builder, OMR::JitBuilder::
 	fprintf(stderr, " %s ", signature->GetChars());
 #endif
 
-	std::vector<OMR::JitBuilder::IlValue*> args;
-	args.reserve(2);
+//	std::vector<OMR::JitBuilder::IlValue*> args;
+//	args.reserve(2);
 
 //	for(int i = 0; i < numOfArgs; ++i) {
 //	  args.push_back(PICK(builder, numOfArgs - 1 - i));
 //	}
 
-	args.push_back(builder->Load("interpreter"));
-	args.push_back(builder->Load("frame"));
-
+//	args.push_back(builder->Load("interpreter"));
+//	args.push_back(builder->Load("frame"));
+//
 //	char* className = method->GetHolder()->GetName()->GetChars();
 //	std::string methodName = std::string(className) + ">>#" + signature->GetChars();
 
-	builder->CallVirtual(signature->GetChars(), 2, args.data());
+//	builder->CallVirtual(signature->GetChars(), 2, args.data());
 
 	// sendResult : pInt64
-	builder->Store("sendResult",
-	builder->      LoadAt(ppInt64,
-	builder-> 	      LoadIndirect("VMFrame", "stack_ptr",
-	builder->	 		   Load("frame"))));
+//	builder->Store("sendResult",
+//	builder->      LoadAt(ppInt64,
+//	builder-> 	      LoadIndirect("VMFrame", "stack_ptr",
+//	builder->	 		   Load("frame"))));
 
-	DROP(builder, numOfArgs);
-	PUSH(builder, builder->Load("sendResult"));
-
-	builder->AddFallThroughBuilder(fallThrough);
-
-	return;
+//	DROP(builder, numOfArgs);
+//	PUSH(builder, builder->Load("sendResult"));
+//
+//	builder->AddFallThroughBuilder(fallThrough);
+//
+//	return;
 
 	INLINE_STATUS status = doInlineIfPossible(&builder, &genericSend, &merge, signature, bytecodeIndex);
 	if (status != INLINE_FAILED) {

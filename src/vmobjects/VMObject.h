@@ -124,7 +124,7 @@ protected:
     // VMObject essentials
     long   hash;
     size_t objectSize;     // set by the heap at allocation time
-    long   numberOfFields;    
+    long   numberOfFields;
     const long fieldsOffset;
     
     GCClass* clazz;

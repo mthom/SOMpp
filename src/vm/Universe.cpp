@@ -503,7 +503,7 @@ void Universe::initialize(long _argc, char** _argv) {
     allocationStats["VMArray"] = {0,0};
 #endif
 
-    heapSize = 8 * 1024 * 1024;
+    heapSize = 64 * 1024 * 1024;
 
     vector<StdString> argv = handleArguments(_argc, _argv);
 
@@ -947,7 +947,7 @@ void Universe::LoadSystemClass(VMClass* systemClass) {
     if (result->HasPrimitives() || result->GetClass()->HasPrimitives())
        result->LoadPrimitives(classPath);
 
-    //    enqueueAOTMethods(systemClass);
+    // enqueueAOTMethods(systemClass);
 }
 
 VMArray* Universe::NewArray(long size) const {

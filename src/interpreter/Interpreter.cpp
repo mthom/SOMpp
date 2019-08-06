@@ -614,9 +614,9 @@ void Interpreter::doSend(long bytecodeIndex) {
 
     VMClass* receiverClass = CLASS_OF(receiver);
 
-#if GC_TYPE == OMR_GARBAGE_COLLECTION
-    method->setInvokeReceiverCache(receiverClass, bytecodeIndex);
-#endif
+//#if GC_TYPE == OMR_GARBAGE_COLLECTION
+//    method->setInvokeReceiverCache(receiverClass, bytecodeIndex);
+//#endif
 
     assert(Universe::IsValidObject(receiverClass));
 
