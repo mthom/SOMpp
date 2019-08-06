@@ -36,7 +36,7 @@
 const long VMClass::VMClassNumberOfFields = 4;
 
 VMClass::VMClass() :
-  VMObject(VMClassNumberOfFields, 8), superClass(nullptr), name(nullptr), instanceFields(
+  VMObject(VMClassNumberOfFields, 2), superClass(nullptr), name(nullptr), instanceFields(
                 nullptr), instanceInvokables(nullptr) {
     dispatchTable = &DispatchTable<256>::defaultDispatchTable;
 }
@@ -50,7 +50,7 @@ VMClass* VMClass::Clone() const {
 }
 
 VMClass::VMClass(long numberOfFields) :
-  VMObject(numberOfFields + VMClassNumberOfFields, 8) {
+  VMObject(numberOfFields + VMClassNumberOfFields, 2) {
    dispatchTable = &DispatchTable<256>::defaultDispatchTable;
 }
 
@@ -280,15 +280,25 @@ StdString VMClass::AsDebugString() const {
  */
 VMInvokable* VMClass::LookupMethodByCardOrSignature(uint64_t card, VMSymbol* signature)
 {
-    auto it = cardMethodMap.find(card);
+    long numInvokables = GetNumberOfInstanceInvokables();
+    for (long i = 0; i < numInvokables; ++i) {
+        VMInvokable* invokable = GetInstanceInvokable(i);
 
-    if (it != cardMethodMap.end()) {
-       return it->second;
-    } else if (VMInvokable* inv = LookupInvokable(signature)) {
-       cardMethodMap[card] = inv;
-       return inv;       
+        if (invokable->GetCard() == card) {
+	   return invokable;
+        }
     }
 
+    if (VMInvokable* inv = LookupInvokable(signature)) {
+       return inv;
+    }
+    
+    // look in super class
+    if (HasSuperClass()) {
+       return load_ptr(superClass)->LookupMethodByCardOrSignature(card, signature);
+    }
+    
+    // invokable not found
     return nullptr;
 }
 

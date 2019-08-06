@@ -94,7 +94,6 @@ private:
     long numberOfSuperInstanceFields() const;
 
     DispatchTable<256>* dispatchTable;
-    std::map<uint64_t, VMInvokable*> cardMethodMap;
     
     GCClass* superClass;
     GCSymbol* name;
