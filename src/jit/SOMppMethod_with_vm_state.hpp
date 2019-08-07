@@ -108,7 +108,8 @@ public:
 	SOMppMethod(OMR::JitBuilder::TypeDictionary *types, VMMethod *vmMethod, bool inlineCalls);
 	virtual bool buildIL();
         void defineFunction(const char*);
-
+        virtual bool RequestFunction(const char* name);
+  
 protected:
         std::set<std::string> _functionsAdded;
   

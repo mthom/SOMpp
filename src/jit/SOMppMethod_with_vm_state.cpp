@@ -781,6 +781,19 @@ SOMppMethod::doPopField(OMR::JitBuilder::BytecodeBuilder *builder, long bytecode
 	popField(builder, getSelf(builder), method->GetBytecode(bytecodeIndex + 1));
 }
 
+bool
+SOMppMethod::RequestFunction(const char *name)
+{
+   DefineFunction(name, (char*)__FILE__, (char *)PRINTSTRING_LINE,
+		  reinterpret_cast<void*>(18),
+		  NoType,
+		  2,
+		  pInt64,
+		  pVMFrame);
+
+   return true;
+}
+
 void
 SOMppMethod::doSend(OMR::JitBuilder::BytecodeBuilder *builder, OMR::JitBuilder::BytecodeBuilder **bytecodeBuilderTable,
 		    long bytecodeIndex, OMR::JitBuilder::BytecodeBuilder *fallThrough)
@@ -822,6 +835,8 @@ SOMppMethod::doSend(OMR::JitBuilder::BytecodeBuilder *builder, OMR::JitBuilder::
 //
 //	return;
 
+	builder->ComputedCall("<=", 1, ConstAddress(nullptr), ConstInt64(1));
+	
 	INLINE_STATUS status = doInlineIfPossible(&builder, &genericSend, &merge, signature, bytecodeIndex);
 	if (status != INLINE_FAILED) {
 		builder->Goto(merge);

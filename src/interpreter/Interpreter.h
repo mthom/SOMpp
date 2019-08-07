@@ -71,9 +71,8 @@ private:
 
     VMFrame* popFrame();
     void popFrameAndPushResult(vm_oop_t result);
-    VMInvokable* findMethod(uint64_t card, uint8_t code, VMSymbol* signature, VMClass* receiverClass);
-    VMInvokable* selectorMismatchHandler(VMSymbol* signature, VMClass* clazz, uint64_t card, 
-					 uint64_t code);
+    VMInvokable* findMethod(uint8_t code, VMSymbol* signature, VMClass* receiverClass);
+    VMInvokable* selectorMismatchHandler(VMSymbol* signature, VMClass* clazz, uint64_t code);
     void doesNotUnderstandHandler(VMSymbol*);        
 
     uint64_t getMethodCard();

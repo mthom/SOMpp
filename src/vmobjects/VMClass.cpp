@@ -274,38 +274,41 @@ StdString VMClass::AsDebugString() const {
     return "Class(" + GetName()->GetStdString() + ")";
 }
 
-/*  
- * We require signature as a backup, otherwise we'd have to change the
- * class hierarchy.
- */
-VMInvokable* VMClass::LookupMethodByCardOrSignature(uint64_t card, VMSymbol* signature)
-{
-    long numInvokables = GetNumberOfInstanceInvokables();
-    for (long i = 0; i < numInvokables; ++i) {
-        VMInvokable* invokable = GetInstanceInvokable(i);
-
-        if (invokable->GetCard() == card) {
-	   return invokable;
-        }
-    }
-
-    if (VMInvokable* inv = LookupInvokable(signature)) {
-       return inv;
-    }
-    
-    // look in super class
-    if (HasSuperClass()) {
-       return load_ptr(superClass)->LookupMethodByCardOrSignature(card, signature);
-    }
-    
-    // invokable not found
-    return nullptr;
-}
-
 DispatchTable<256>& VMClass::GetDispatchTable() {
     return *dispatchTable;
 }
 
 DispatchTable<256>** VMClass::GetAddressOfDispatchTable() {
     return &dispatchTable;
+}
+
+uint8_t VMClass::GetSelectorCode(uint64_t card)
+{
+   static uint32_t lastUnusedCode = 0;
+   static uint64_t codeCardMap[256] = {};   
+   static std::map<uint64_t, uint8_t> cardCodeMap {};
+
+   auto it = cardCodeMap.find(card);
+
+   if (it != cardCodeMap.end()) {
+      return it->second;
+   } 
+   
+   if (lastUnusedCode < 256) {
+     uint8_t code = lastUnusedCode++;
+     
+     codeCardMap[code] = card;
+     cardCodeMap[card] = code;
+
+     return code;
+   } else {
+     uint8_t code = rand() % 256;
+
+     cardCodeMap.erase(codeCardMap[code]);
+     
+     cardCodeMap[card] = code;
+     codeCardMap[code] = card;
+     
+     return code;
+   }
 }

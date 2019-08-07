@@ -20,7 +20,7 @@ VMInvokable*& DispatchTable<N>::operator [](uint8_t index)
 template <std::size_t N>
 void DispatchTable<N>::allocDispatchTable(DispatchTable<N>** table)
 {
-   static uint8_t LAST_UNUSED_TABLE = 0;
+   static uint32_t LAST_UNUSED_TABLE = 0;
    static DispatchTable<N>** TABLE_CACHE[N] = {};
 
    if (LAST_UNUSED_TABLE + 1UL < N) {

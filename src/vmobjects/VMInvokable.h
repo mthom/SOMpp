@@ -57,8 +57,6 @@ public:
 
     void WalkObjects(walk_heap_fn);
 
-    static uint8_t GetSelectorCode(uint64_t card);
-
 protected:
     GCSymbol* signature;
     GCClass*  holder;
