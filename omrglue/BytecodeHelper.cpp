@@ -487,6 +487,40 @@ BytecodeHelper::invokeHelper(int64_t* interp, VMFrame* framePtr, int64_t invokab
 	 return 0;
 }
 
+int64_t 
+BytecodeHelper::getInvokableByDispatch(int64_t receiverPtr, int64_t signaturePtr, int8_t code)
+{
+#define VALUE_FOR_GET_INVOKABLE_BY_DISPATCH_LINE LINETOSTR(__LINE__)
+         VMClass *clazz = reinterpret_cast<VMClass *>(receiverPtr);
+	 VMSymbol *signature = reinterpret_cast<VMSymbol *>(signaturePtr);
+	 uint8_t ucode = (uint8_t)(code);
+
+	 VMInvokable *method = clazz->GetDispatchTable()[ucode];
+	 
+	 if (!method || method->GetCard() != signature->GetCard()) {
+	   if (&clazz->GetDispatchTable() == &DispatchTable<256>::defaultDispatchTable) {
+	     DispatchTable<256>::allocDispatchTable(clazz->GetAddressOfDispatchTable());
+	   }
+
+	   uint64_t card = signature->GetCard();
+
+	   if ((method = clazz->LookupInvokable(signature)) == nullptr) {
+	     //doesNotUnderstandHandler(signature);
+	     return NULL;
+	   }
+
+	   uint8_t currentCode = VMClass::GetSelectorCode(card);
+
+	   clazz->GetDispatchTable()[currentCode] = method;
+
+//	   if (currentCode != code) {
+//	     currentBytecodes[bytecodeIndexGlobal - 1] = currentCode;
+//	   }
+	 }
+
+	 return reinterpret_cast<int64_t>(method);	 
+}
+
 const char* BytecodeHelper::GET_CLASS_LINE = VALUE_FOR_GET_CLASS_LINE;
 const char* BytecodeHelper::GET_SUPER_CLASS_LINE = VALUE_FOR_GET_SUPER_CLASS_LINE;
 const char* BytecodeHelper::GET_GLOBAL_LINE = VALUE_FOR_GET_GLOBAL_LINE;
@@ -505,4 +539,5 @@ const char* BytecodeHelper::POP_FRAME_AND_PUSH_RESULT_LINE = VALUE_FOR_POP_FRAME
 const char* BytecodeHelper::POP_TO_CONTEXT_LINE = VALUE_FOR_POP_TO_CONTEXT_LINE;
 const char* BytecodeHelper::PRINT_OBJECT_LINE = VALUE_FOR_PRINT_OBJECT_LINE;
 const char* BytecodeHelper::INVOKE_HELPER_LINE = VALUE_FOR_INVOKE_HELPER_LINE;
+const char* BytecodeHelper::GET_INVOKABLE_BY_DISPATCH_LINE = VALUE_FOR_GET_INVOKABLE_BY_DISPATCH_LINE;
 
