@@ -50,6 +50,8 @@ public:
     DispatchTable<256>&  GetDispatchTable();
     DispatchTable<256>** GetAddressOfDispatchTable();
 
+    static uint8_t      GetSelectorCode(uint64_t card);    
+
     inline VMClass*     GetSuperClass() const;
     inline void         SetSuperClass(VMClass*);
     inline bool         HasSuperClass() const;
@@ -71,11 +73,11 @@ public:
            bool         HasPrimitives() const;
            void         LoadPrimitives(const vector<StdString>&);
     virtual VMClass*    Clone() const;
-           void         WalkObjects(walk_heap_fn walk);
-    
+           void         WalkObjects(walk_heap_fn walk);	   
+	   
     virtual void MarkObjectAsInvalid();
 
-    VMInvokable* LookupMethodByCardOrSignature(uint64_t card, VMSymbol* signature);
+    VMInvokable* LookupMethodByCard(VMSymbol* signature); //uint64_t card);
     virtual StdString AsDebugString() const;
 
     std::vector<fomrobject_t*> GetFieldPtrs() {

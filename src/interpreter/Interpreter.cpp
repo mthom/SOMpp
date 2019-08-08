@@ -317,20 +317,21 @@ void Interpreter::popFrameAndPushResult(vm_oop_t result) {
 }
 
 VMInvokable*
-Interpreter::selectorMismatchHandler(VMSymbol* signature, VMClass* clazz, uint64_t card, uint64_t code)
+Interpreter::selectorMismatchHandler(VMSymbol* signature, VMClass* clazz, uint64_t code)
 {
    if (&clazz->GetDispatchTable() == &DispatchTable<256>::defaultDispatchTable) {
       DispatchTable<256>::allocDispatchTable(clazz->GetAddressOfDispatchTable());
    }
 
    VMInvokable* method;
+   uint64_t card = signature->GetCard();
 
-   if ((method = clazz->LookupMethodByCardOrSignature(card, signature)) == nullptr) {
+   if ((method = clazz->LookupInvokable(signature)) == nullptr) {
       doesNotUnderstandHandler(signature);
       return nullptr;
    }
 
-   uint8_t currentCode = VMMethod::GetSelectorCode(card);
+   uint8_t currentCode = VMClass::GetSelectorCode(card);
 
    clazz->GetDispatchTable()[currentCode] = method;
 
@@ -390,12 +391,12 @@ void Interpreter::send(uint64_t, uint64_t, VMSymbol* signature, VMClass* receive
 }
 */
 
-VMInvokable* Interpreter::findMethod(uint64_t card, uint8_t code, VMSymbol* signature, VMClass* receiverClass)
+VMInvokable* Interpreter::findMethod(uint8_t code, VMSymbol* signature, VMClass* receiverClass)
 {
     VMInvokable* method = receiverClass->GetDispatchTable()[code];
 
-    if (!method || method->GetCard() != card) {
-       method = selectorMismatchHandler(signature, receiverClass, card, code);
+    if (!method || method->GetCard() != signature->GetCard()) {
+       method = selectorMismatchHandler(signature, receiverClass, code);
     }
 
     return method;
@@ -624,10 +625,10 @@ void Interpreter::doSend(long bytecodeIndex) {
     GetUniverse()->receiverTypes[receiverClass->GetName()->GetStdString()]++;
 #endif
 
-    uint64_t card = *(uint64_t*) (currentBytecodes + bytecodeIndex + 2);
+    //uint64_t card = *(uint64_t*) (currentBytecodes + bytecodeIndex + 2);
     uint8_t code  = currentBytecodes[bytecodeIndex+2+sizeof(uint64_t)];
     
-    VMInvokable* invokable = findMethod(card, code, signature, receiverClass);
+    VMInvokable* invokable = findMethod(code, signature, receiverClass);
 
     if (invokable != nullptr) {
        GetFrame()->SetBytecodeIndex(bytecodeIndexGlobal);
@@ -644,10 +645,10 @@ void Interpreter::doSuperSend(long bytecodeIndex) {
     VMClass* holder = realMethod->GetHolder();
     VMClass* super = holder->GetSuperClass();
 
-    uint64_t card = *(uint64_t*) (currentBytecodes + bytecodeIndex + 2);
+    // uint64_t card = *(uint64_t*) (currentBytecodes + bytecodeIndex + 2);
     uint8_t code  = currentBytecodes[bytecodeIndex+2+sizeof(uint64_t)];
 
-    VMInvokable* invokable = findMethod(card, code, signature, super);
+    VMInvokable* invokable = findMethod(code, signature, super);
     
     if (invokable != nullptr)
         invokable->Invoke(this, GetFrame());

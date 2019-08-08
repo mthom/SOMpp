@@ -45,6 +45,10 @@ public:
 
     virtual StdString AsDebugString() const;
 
+    inline uint64_t GetCard() {
+        return card;
+    }
+    
     std::vector<fomrobject_t*> GetFieldPtrs() {
       std::vector<fomrobject_t*> fields;
 
@@ -58,10 +62,6 @@ public:
       return fields;
     }
 
-    uint64_t GetCard() const {
-      return card;
-    }
-
 private:
     const int numberOfArgumentsOfSignature;
     const GCClass* cachedClass_invokable[3];
@@ -71,7 +71,7 @@ private:
     
     inline VMInvokable* GetCachedInvokable(const VMClass*) const;
     inline void UpdateCachedInvokable(const VMClass* cls, VMInvokable* invo);
-
+    
     virtual void WalkObjects(walk_heap_fn);
 
     friend class Signature;
