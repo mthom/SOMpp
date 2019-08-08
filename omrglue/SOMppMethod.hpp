@@ -49,6 +49,8 @@ protected:
 	OMR::JitBuilder::IlType *vmFrame;
 	OMR::JitBuilder::IlType *pVMFrame;
 	OMR::JitBuilder::IlType *vmObject;
+        OMR::JitBuilder::IlType *vmInvokable;
+        OMR::JitBuilder::IlType *pVMInvokable;
         OMR::JitBuilder::IlType *valueType;
 	OMR::JitBuilder::VirtualMachineOperandStack *stack;
 	OMR::JitBuilder::VirtualMachineRegister *stackTop;
@@ -69,6 +71,7 @@ private:
 
 	void defineVMFrameStructure(OMR::JitBuilder::TypeDictionary *types);
 	void defineVMObjectStructure(OMR::JitBuilder::TypeDictionary *types);
+        void defineVMInvokableStructure(OMR::JitBuilder::TypeDictionary *types);
 
 	void justReturn(OMR::JitBuilder::IlBuilder *from);
 
