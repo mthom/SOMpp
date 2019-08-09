@@ -360,8 +360,8 @@ SOMppMethod::defineFunctions()
 	DefineFunction((char *)"popFrameAndPushResult", (char *)BytecodeHelper::BYTECODEHELPER_FILE, (char *)BytecodeHelper::POP_FRAME_AND_PUSH_RESULT_LINE, (void *)&BytecodeHelper::popFrameAndPushResult, NoType, 3, pInt64, pVMFrame, pInt64);
 	DefineFunction((char *)"popToContext", (char *)BytecodeHelper::BYTECODEHELPER_FILE, (char *)BytecodeHelper::POP_TO_CONTEXT_LINE, (void *)&BytecodeHelper::popToContext, Int64, 2, pInt64, Int64);
 	DefineFunction((char *)"printObject", (char *)BytecodeHelper::BYTECODEHELPER_FILE, (char *)BytecodeHelper::PRINT_OBJECT_LINE, (void *)&BytecodeHelper::printObject, Int64, 3, Int64, Int64, Int64);
-	DefineFunction((char *)"invokeHelper", (char *)BytecodeHelper::BYTECODEHELPER_FILE, (char *)BytecodeHelper::PRINT_OBJECT_LINE, (void *)&BytecodeHelper::printObject, Int64, 3, Int64, Int64, Int64);
-	DefineFunction((char *)"getInvokableByDispatch", (char *)BytecodeHelper::BYTECODEHELPER_FILE, (char *)BytecodeHelper::GET_INVOKABLE_BY_DISPATCH_LINE, (void *)&BytecodeHelper::printObject, Int64, 3, Int64, Int64, Int8);
+	DefineFunction((char *)"invokeHelper", (char *)BytecodeHelper::BYTECODEHELPER_FILE, (char *)BytecodeHelper::PRINT_OBJECT_LINE, (void *)&BytecodeHelper::invokeHelper, Int64, 3, Int64, Int64, Int64);
+	DefineFunction((char *)"getInvokableByDispatch", (char *)BytecodeHelper::BYTECODEHELPER_FILE, (char *)BytecodeHelper::GET_INVOKABLE_BY_DISPATCH_LINE, (void *)&BytecodeHelper::getInvokableByDispatch, Int64, 3, Int64, Int64, Int8);
 }
 
 void
@@ -927,7 +927,7 @@ SOMppMethod::doSend(OMR::JitBuilder::BytecodeBuilder *builder, OMR::JitBuilder::
 	builder->Store("receiverClass",
 		builder->	Call("getClass", 1, PICK(builder, numOfArgs - 1)));
 	builder->Store("invokable",
-		builder->Call("getDispatchTableAddress", 2, Load("receiverClass"), builder->Const(signature)));
+		builder->Call("getInvokableByDispatch", 3, Load("receiverClass"), builder->Const(signature),builder->ConstInt8(code)));
 //	OMR::JitBuilder::IlValue *inv = builder->LoadAt(pVMInvokable,builder->IndexAt(ppVMInvokable,dp,builder->Const(code)));
 //	OMR::JitBuilder::IlValue *signatureInTable = builder->LoadIndirect("Int64","signature",inv);
 //	OMR::JitBuilder::BytecodeBuilder *fast_path = OrphanBytecodeBuilder(bytecodeIndex, Bytecode::GetBytecodeName(BC_SEND));
@@ -938,7 +938,8 @@ SOMppMethod::doSend(OMR::JitBuilder::BytecodeBuilder *builder, OMR::JitBuilder::
         builder->	 LoadAt(ppInt64,
 	builder->		LoadIndirect("VMFrame", "stack_ptr",
 	builder->			Load("frame"))));
-	builder->Goto(merge);
+	merge = builder;
+	//builder->Goto(merge);
         
 	DROP(merge, numOfArgs);
 	PUSH(merge, merge->Load("sendResult"));
