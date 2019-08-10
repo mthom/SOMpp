@@ -170,6 +170,7 @@ SOMppMethod::defineStructures(OMR::JitBuilder::TypeDictionary *types)
 
 	defineVMFrameStructure(types);
 	defineVMObjectStructure(types);
+	defineVMInvokableStructure(types);
 }
 
 void
@@ -231,6 +232,25 @@ SOMppMethod::defineVMObjectStructure(OMR::JitBuilder::TypeDictionary *types)
 		types->DefineField("VMObject", fieldNames[i], Int64);
 	}
 	types->CloseStruct("VMObject");
+}
+
+void
+SOMppMethod::defineVMInvokableStructure(OMR::JitBuilder::TypeDictionary *types)
+{
+        vmInvokable = types->DefineStruct("VMInvokable");
+	pVMInvokable = types->PointerTo("VMInvokable");
+	types->DefineField("VMInvokable", "vTable", Int64);
+	types->DefineField("VMInvokable", "gcField", Int64);
+	types->DefineField("VMInvokable", "hash", Int64);
+	types->DefineField("VMInvokable", "objectSize", Int64);
+	types->DefineField("VMInvokable", "numberOfFields", Int64);
+	types->DefineField("VMInvokable", "clazz", Int64);
+	for (int i = 0; i < FIELDNAMES_LENGTH; i++) {
+		types->DefineField("VMInvokable", fieldNames[i], Int64);
+	}
+	types->DefineField("VMInvokable", "signature", Int64);
+	types->DefineField("VMInvokable", "holder", Int64);
+	types->CloseStruct("VMInvokable");
 }
 
 int64_t

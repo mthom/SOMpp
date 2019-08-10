@@ -334,6 +334,7 @@ SOMppMethod::defineStructures(OMR::JitBuilder::TypeDictionary *types)
 
 	defineVMObjectStructure(types);
 	defineVMFrameStructure(types);
+	defineVMInvokableStructure(types);
 }
 
 void
@@ -359,6 +360,8 @@ SOMppMethod::defineFunctions()
 	DefineFunction((char *)"popFrameAndPushResult", (char *)BytecodeHelper::BYTECODEHELPER_FILE, (char *)BytecodeHelper::POP_FRAME_AND_PUSH_RESULT_LINE, (void *)&BytecodeHelper::popFrameAndPushResult, NoType, 3, pInt64, pVMFrame, pInt64);
 	DefineFunction((char *)"popToContext", (char *)BytecodeHelper::BYTECODEHELPER_FILE, (char *)BytecodeHelper::POP_TO_CONTEXT_LINE, (void *)&BytecodeHelper::popToContext, Int64, 2, pInt64, Int64);
 	DefineFunction((char *)"printObject", (char *)BytecodeHelper::BYTECODEHELPER_FILE, (char *)BytecodeHelper::PRINT_OBJECT_LINE, (void *)&BytecodeHelper::printObject, Int64, 3, Int64, Int64, Int64);
+	DefineFunction((char *)"invokeHelper", (char *)BytecodeHelper::BYTECODEHELPER_FILE, (char *)BytecodeHelper::PRINT_OBJECT_LINE, (void *)&BytecodeHelper::invokeHelper, Int64, 3, Int64, Int64, Int64);
+	DefineFunction((char *)"getInvokableByDispatch", (char *)BytecodeHelper::BYTECODEHELPER_FILE, (char *)BytecodeHelper::GET_INVOKABLE_BY_DISPATCH_LINE, (void *)&BytecodeHelper::getInvokableByDispatch, Int64, 3, Int64, Int64, Int8);
 }
 
 void
@@ -410,6 +413,26 @@ SOMppMethod::defineVMObjectStructure(OMR::JitBuilder::TypeDictionary *types)
 	}
 
 	types->CloseStruct("VMObject");
+}
+
+void
+SOMppMethod::defineVMInvokableStructure(OMR::JitBuilder::TypeDictionary *types)
+{
+        vmInvokable = types->DefineStruct("VMInvokable");
+	pVMInvokable = types->PointerTo("VMInvokable");
+	ppVMInvokable = types->PointerTo(pVMInvokable);
+	types->DefineField("VMInvokable", "vTable", Int64);
+	types->DefineField("VMInvokable", "gcField", Int64);
+	types->DefineField("VMInvokable", "hash", Int64);
+	types->DefineField("VMInvokable", "objectSize", Int64);
+	types->DefineField("VMInvokable", "numberOfFields", Int64);
+	types->DefineField("VMInvokable", "clazz", Int64);
+	for (int i = 0; i < FIELDNAMES_LENGTH; i++) {
+		types->DefineField("VMInvokable", fieldNames[i], Int64);
+	}
+	types->DefineField("VMInvokable", "signature", Int64);
+	types->DefineField("VMInvokable", "holder", Int64);
+	types->CloseStruct("VMInvokable");
 }
 
 int64_t
@@ -802,6 +825,7 @@ SOMppMethod::doSend(OMR::JitBuilder::BytecodeBuilder *builder, OMR::JitBuilder::
 	int numOfArgs = Signature::GetNumberOfArguments(signature);
 	OMR::JitBuilder::BytecodeBuilder *genericSend = nullptr;
 	OMR::JitBuilder::BytecodeBuilder *merge = nullptr;
+	uint8_t code = method->bytecodes[bytecodeIndex+10];
 
 #if SOM_METHOD_DEBUG
 	fprintf(stderr, " %s ", signature->GetChars());
@@ -835,9 +859,8 @@ SOMppMethod::doSend(OMR::JitBuilder::BytecodeBuilder *builder, OMR::JitBuilder::
 //
 //	return;
 
-//	builder->ComputedCall("<=", 1, ConstAddress(nullptr), ConstInt64(1));
-	
 	INLINE_STATUS status = doInlineIfPossible(&builder, &genericSend, &merge, signature, bytecodeIndex);
+
 	if (status != INLINE_FAILED) {
 		builder->Goto(merge);
 	} else {
@@ -850,7 +873,7 @@ SOMppMethod::doSend(OMR::JitBuilder::BytecodeBuilder *builder, OMR::JitBuilder::
 		genericSend->Store("receiverClass",
 		genericSend->	Call("getClass", 1, PICK(genericSend, numOfArgs - 1)));
 
-		/* going to call out of line helper so commit the stack */
+		// going to call out of line helper so commit the stack
 		COMMIT(genericSend);
 
 		// invokable : Int64
@@ -899,6 +922,23 @@ SOMppMethod::doSend(OMR::JitBuilder::BytecodeBuilder *builder, OMR::JitBuilder::
 		}
 	}
 
+	builder->Store("receiverClass",
+		builder->	Call("getClass", 1, PICK(builder, numOfArgs - 1)));
+	builder->Store("invokable",
+		builder->Call("getInvokableByDispatch", 3, Load("receiverClass"), builder->Const(signature),builder->ConstInt8(code)));
+//	OMR::JitBuilder::IlValue *inv = builder->LoadAt(pVMInvokable,builder->IndexAt(ppVMInvokable,dp,builder->Const(code)));
+//	OMR::JitBuilder::IlValue *signatureInTable = builder->LoadIndirect("Int64","signature",inv);
+//	OMR::JitBuilder::BytecodeBuilder *fast_path = OrphanBytecodeBuilder(bytecodeIndex, Bytecode::GetBytecodeName(BC_SEND));
+//	builder->IfCmpEqual(&fast_path,signatureInTable,builder->Const(signature));
+//	fast_path->Call("invokeHelper",3,fast_path->Load("interpreter"),fast_path->Load("frame"),fast_path->Load("invokable"));
+	builder->Call("invokeHelper",3,builder->Load("interpreter"),builder->Load("frame"),builder->Load("invokable"));
+	builder->Store("sendResult",
+        builder->	 LoadAt(ppInt64,
+	builder->		LoadIndirect("VMFrame", "stack_ptr",
+	builder->			Load("frame"))));
+	merge = builder;
+	//builder->Goto(merge);
+        
 	DROP(merge, numOfArgs);
 	PUSH(merge, merge->Load("sendResult"));
 	merge->AddFallThroughBuilder(fallThrough);

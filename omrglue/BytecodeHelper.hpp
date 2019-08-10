@@ -80,8 +80,14 @@ public:
 	
 	static int64_t popToContext(int64_t* interp, VMFrame* frame);
 	static const char* POP_TO_CONTEXT_LINE;
+
 	static int64_t printObject(int64_t objectPtr, int64_t object2Ptr, int64_t signaturePtr);
-	static const char* PRINT_OBJECT_LINE;
+        static const char* PRINT_OBJECT_LINE;
+
+        static const char *INVOKE_HELPER_LINE;
+        static int64_t invokeHelper(int64_t* interp, VMFrame* framePtr, int64_t invokablePtr);
+        static int64_t getInvokableByDispatch(int64_t receiverPtr, int64_t signature, int8_t code);
+        static const char* GET_INVOKABLE_BY_DISPATCH_LINE;
 };
 	
 #endif /* BYTECODEHELPER_INCL */
