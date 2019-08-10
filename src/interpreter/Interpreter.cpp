@@ -395,7 +395,7 @@ VMInvokable* Interpreter::findMethod(uint8_t code, VMSymbol* signature, VMClass*
 {
     VMInvokable* method = receiverClass->GetDispatchTable()[code];
 
-    if (!method || method->GetCard() != signature->GetCard()) {
+    if (!method || method->GetSignature() != signature) { //method->GetCard() != signature->GetCard()) {
        method = selectorMismatchHandler(signature, receiverClass, code);
     }
 

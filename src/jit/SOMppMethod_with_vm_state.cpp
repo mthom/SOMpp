@@ -835,7 +835,7 @@ SOMppMethod::doSend(OMR::JitBuilder::BytecodeBuilder *builder, OMR::JitBuilder::
 //
 //	return;
 
-	builder->ComputedCall("<=", 1, ConstAddress(nullptr), ConstInt64(1));
+//	builder->ComputedCall("<=", 1, ConstAddress(nullptr), ConstInt64(1));
 	
 	INLINE_STATUS status = doInlineIfPossible(&builder, &genericSend, &merge, signature, bytecodeIndex);
 	if (status != INLINE_FAILED) {
