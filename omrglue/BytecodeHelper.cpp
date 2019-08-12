@@ -49,6 +49,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include "Jit.hpp"
+
 #include "vmobjects/Signature.h"
 #include "vmobjects/VMFrame.h"
 #include "vmobjects/VMMethod.h"
@@ -491,9 +493,7 @@ void
 BytecodeHelper::patchDispatchTableLoad(uint64_t card, uint64_t code)
 {
 #define VALUE_FOR_PATCH_DISPATCH_TABLE_LOAD_LINE LINETOSTR(__LINE__)
-        auto fe = JitBuilder::FrontEnd::instance();
-        fe->persistentMemory()->getPersistentInfo()->getRuntimeAssumptionTable()->notifyUserAssumptionTrigger(fe, card, code);
-        return; //TODO: NOP, fill this in.
+        invalidateJitAssumption(card, code);
 }
 
 int64_t 

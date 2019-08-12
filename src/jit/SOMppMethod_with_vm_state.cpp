@@ -856,7 +856,7 @@ SOMppMethod::doSend(OMR::JitBuilder::BytecodeBuilder *builder, OMR::JitBuilder::
 					lookup->	       Load("pDispatchTable"),
                                         lookup->               ConstInt8(code)));
 
-        OMR::JitBuilder::IlValue *signatureInTable = lookup->LoadIndirect("pInt64", "signature", inv);
+        OMR::JitBuilder::IlValue *signatureInTable = lookup->LoadIndirect("VMInvokable", "signature", inv);
 
 	OMR::JitBuilder::BytecodeBuilder *fastPath = OrphanBytecodeBuilder(bytecodeIndex, Bytecode::GetBytecodeName(BC_SEND));
 	OMR::JitBuilder::BytecodeBuilder *slowPath = OrphanBytecodeBuilder(bytecodeIndex, Bytecode::GetBytecodeName(BC_SEND));
@@ -877,7 +877,7 @@ SOMppMethod::doSend(OMR::JitBuilder::BytecodeBuilder *builder, OMR::JitBuilder::
 	fastPath->Call("invokeHelper", 3,
 	fastPath->     Load("interpreter"),
         fastPath->     Load("frame"),
-        fastPath->     Load("invokable"));
+		       inv);
 
 	fastPath->Goto(merge);
 
