@@ -477,17 +477,64 @@ BytecodeHelper::printObject(int64_t objectPtr, int64_t object2Ptr, int64_t signa
 	return 0;
 }
 
-int64_t 
+int64_t
 BytecodeHelper::invokeHelper(int64_t* interp, VMFrame* framePtr, int64_t invokablePtr)
 {
 #define VALUE_FOR_INVOKE_HELPER_LINE LINETOSTR(__LINE__)
-         VMInvokable *invokable = reinterpret_cast<VMInvokable*>(invokablePtr);
-	 Interpreter *interpreter = (Interpreter *)interp;
-	 invokable->Invoke(interpreter,framePtr);
-	 return 0;
+        VMInvokable *invokable = reinterpret_cast<VMInvokable*>(invokablePtr);
+	Interpreter *interpreter = (Interpreter *)interp;
+	invokable->Invoke(interpreter,framePtr);
+	return 0;
+}
+
+void
+BytecodeHelper::patchDispatchTableLoad(uint64_t card, uint64_t code)
+{
+#define VALUE_FOR_PATCH_DISPATCH_TABLE_LOAD_LINE LINETOSTR(__LINE__)
+        auto fe = JitBuilder::FrontEnd::instance();
+        fe->persistentMemory()->getPersistentInfo()->getRuntimeAssumptionTable()->notifyUserAssumptionTrigger(fe, card, code);
+        return; //TODO: NOP, fill this in.
 }
 
 int64_t 
+BytecodeHelper::getSignatureCard(int64_t signaturePtr)
+{
+#define VALUE_FOR_GET_SIGNATURE_CARD_LINE LINETOSTR(__LINE__)
+        VMSymbol *signature = reinterpret_cast<VMSymbol *>(signaturePtr);
+	return signature->GetCard();
+}
+
+int64_t
+BytecodeHelper::selectorMismatchHandler(int64_t card, int64_t classPtr)
+{
+#define VALUE_FOR_SELECTOR_MISMATCH_HANDLER_LINE LINETOSTR(__LINE__)
+        VMClass *clazz = reinterpret_cast<VMClass *>(classPtr);
+
+	if (&clazz->GetDispatchTable() == &DispatchTable<256>::defaultDispatchTable) {
+	   DispatchTable<256>::allocDispatchTable(clazz->GetAddressOfDispatchTable());
+	}
+
+	VMInvokable* method;
+
+	if ((method = clazz->LookupInvokableByCard(card)) == nullptr) {
+	   // doesNotUnderstandHandler(signature);
+	   return -1; // method not found!
+	}
+
+	uint8_t currentCode = VMClass::GetSelectorCode(card);
+	clazz->GetDispatchTable()[currentCode] = method;
+	return currentCode;
+}
+
+int64_t
+BytecodeHelper::getAddressOfDispatchTable(int64_t classPtr)
+{
+#define VALUE_FOR_GET_ADDRESS_OF_DISPATCH_TABLE_LINE LINETOSTR(__LINE__)
+        VMClass *clazz = reinterpret_cast<VMClass *>(classPtr);
+	return reinterpret_cast<int64_t>(&clazz->GetDispatchTable());
+}
+
+int64_t
 BytecodeHelper::getInvokableByDispatch(int64_t receiverPtr, int64_t signaturePtr, int8_t code)
 {
 #define VALUE_FOR_GET_INVOKABLE_BY_DISPATCH_LINE LINETOSTR(__LINE__)
@@ -496,7 +543,7 @@ BytecodeHelper::getInvokableByDispatch(int64_t receiverPtr, int64_t signaturePtr
 	 uint8_t ucode = (uint8_t)(code);
 
 	 VMInvokable *method = clazz->GetDispatchTable()[ucode];
-	 
+
 	 if (!method || method->GetCard() != signature->GetCard()) {
 	   if (&clazz->GetDispatchTable() == &DispatchTable<256>::defaultDispatchTable) {
 	     DispatchTable<256>::allocDispatchTable(clazz->GetAddressOfDispatchTable());
@@ -518,7 +565,8 @@ BytecodeHelper::getInvokableByDispatch(int64_t receiverPtr, int64_t signaturePtr
 //	   }
 	 }
 
-	 return reinterpret_cast<int64_t>(method);	 
+	 return code;
+//	 return reinterpret_cast<int64_t>(method);
 }
 
 const char* BytecodeHelper::GET_CLASS_LINE = VALUE_FOR_GET_CLASS_LINE;
@@ -540,4 +588,7 @@ const char* BytecodeHelper::POP_TO_CONTEXT_LINE = VALUE_FOR_POP_TO_CONTEXT_LINE;
 const char* BytecodeHelper::PRINT_OBJECT_LINE = VALUE_FOR_PRINT_OBJECT_LINE;
 const char* BytecodeHelper::INVOKE_HELPER_LINE = VALUE_FOR_INVOKE_HELPER_LINE;
 const char* BytecodeHelper::GET_INVOKABLE_BY_DISPATCH_LINE = VALUE_FOR_GET_INVOKABLE_BY_DISPATCH_LINE;
-
+const char* BytecodeHelper::GET_ADDRESS_OF_DISPATCH_TABLE_LINE = VALUE_FOR_GET_ADDRESS_OF_DISPATCH_TABLE_LINE;
+const char* BytecodeHelper::SELECTOR_MISMATCH_HANDLER_LINE = VALUE_FOR_SELECTOR_MISMATCH_HANDLER_LINE;
+const char* BytecodeHelper::PATCH_DISPATCH_TABLE_LOAD_LINE = VALUE_FOR_PATCH_DISPATCH_TABLE_LOAD_LINE;
+const char* BytecodeHelper::GET_SIGNATURE_CARD_LINE = VALUE_FOR_GET_SIGNATURE_CARD_LINE;

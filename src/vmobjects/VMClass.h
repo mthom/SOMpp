@@ -65,6 +65,7 @@ public:
            VMInvokable* GetInstanceInvokable(long) const;
            void         SetInstanceInvokable(long, VMInvokable*);
            VMInvokable* LookupInvokable(VMSymbol*) const;
+           VMInvokable* LookupInvokableByCard(uint64_t) const;
            long         LookupFieldIndex(VMSymbol*) const;
            bool         AddInstanceInvokable(VMInvokable*);
            void         AddInstancePrimitive(VMPrimitive*);

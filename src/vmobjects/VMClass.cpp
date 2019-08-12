@@ -174,6 +174,28 @@ VMInvokable* VMClass::LookupInvokable(VMSymbol* name) const {
     return nullptr;
 }
 
+VMInvokable* VMClass::LookupInvokableByCard(uint64_t card) const {
+    assert(Universe::IsValidObject(const_cast<VMClass*>(this)));
+
+    VMInvokable* invokable;
+    long numInvokables = GetNumberOfInstanceInvokables();
+
+    for (long i = 0; i < numInvokables; ++i) {
+        invokable = GetInstanceInvokable(i);
+        if (invokable->GetCard() == card) {
+            return invokable;
+        }
+    }
+
+    // look in super class
+    if (HasSuperClass()) {
+        return load_ptr(superClass)->LookupInvokableByCard(card);
+    }
+    
+    // invokable not found
+    return nullptr;
+}
+
 long VMClass::LookupFieldIndex(VMSymbol* name) const {
     long numInstanceFields = GetNumberOfInstanceFields();
     for (long i = 0; i <= numInstanceFields; ++i) {

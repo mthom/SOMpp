@@ -362,6 +362,10 @@ SOMppMethod::defineFunctions()
 	DefineFunction((char *)"printObject", (char *)BytecodeHelper::BYTECODEHELPER_FILE, (char *)BytecodeHelper::PRINT_OBJECT_LINE, (void *)&BytecodeHelper::printObject, Int64, 3, Int64, Int64, Int64);
 	DefineFunction((char *)"invokeHelper", (char *)BytecodeHelper::BYTECODEHELPER_FILE, (char *)BytecodeHelper::PRINT_OBJECT_LINE, (void *)&BytecodeHelper::invokeHelper, Int64, 3, Int64, Int64, Int64);
 	DefineFunction((char *)"getInvokableByDispatch", (char *)BytecodeHelper::BYTECODEHELPER_FILE, (char *)BytecodeHelper::GET_INVOKABLE_BY_DISPATCH_LINE, (void *)&BytecodeHelper::getInvokableByDispatch, Int64, 3, Int64, Int64, Int8);
+	DefineFunction((char *)"getAddressOfDispatchTable", (char *)BytecodeHelper::BYTECODEHELPER_FILE, (char *)BytecodeHelper::GET_ADDRESS_OF_DISPATCH_TABLE_LINE, (void *)&BytecodeHelper::getAddressOfDispatchTable, pVMInvokable, 1, Int64);
+	DefineFunction((char *)"selectorMismatchHandler", (char *)BytecodeHelper::BYTECODEHELPER_FILE, (char *)BytecodeHelper::SELECTOR_MISMATCH_HANDLER_LINE, (void *)&BytecodeHelper::selectorMismatchHandler, Int64, 2, Int64, Int64);
+	DefineFunction((char *)"patchDispatchTableLoad", (char *)BytecodeHelper::BYTECODEHELPER_FILE, (char *)BytecodeHelper::PATCH_DISPATCH_TABLE_LOAD_LINE, (void *)&BytecodeHelper::patchDispatchTableLoad, NoType, 2, Int64, Int64);
+	DefineFunction((char *)"getSignatureCard", (char *)BytecodeHelper::BYTECODEHELPER_FILE, (char *)BytecodeHelper::GET_SIGNATURE_CARD_LINE, (void *)&BytecodeHelper::getSignatureCard, Int64, 1, Int64);
 }
 
 void
@@ -418,20 +422,25 @@ SOMppMethod::defineVMObjectStructure(OMR::JitBuilder::TypeDictionary *types)
 void
 SOMppMethod::defineVMInvokableStructure(OMR::JitBuilder::TypeDictionary *types)
 {
-        vmInvokable = types->DefineStruct("VMInvokable");
-	pVMInvokable = types->PointerTo("VMInvokable");
+        vmInvokable   = types->DefineStruct("VMInvokable");
+
+	pVMInvokable  = types->PointerTo("VMInvokable");
 	ppVMInvokable = types->PointerTo(pVMInvokable);
-	types->DefineField("VMInvokable", "vTable", Int64);
-	types->DefineField("VMInvokable", "gcField", Int64);
+
+	types->DefineField("VMInvokable", "vTable",  pInt64);
+	types->DefineField("VMInvokable", "gcField", pInt64);
 	types->DefineField("VMInvokable", "hash", Int64);
 	types->DefineField("VMInvokable", "objectSize", Int64);
 	types->DefineField("VMInvokable", "numberOfFields", Int64);
-	types->DefineField("VMInvokable", "clazz", Int64);
+	types->DefineField("VMInvokable", "clazz", pInt64);
+
 	for (int i = 0; i < FIELDNAMES_LENGTH; i++) {
-		types->DefineField("VMInvokable", fieldNames[i], Int64);
+		types->DefineField("VMInvokable", fieldNames[i], pInt64);
 	}
-	types->DefineField("VMInvokable", "signature", Int64);
-	types->DefineField("VMInvokable", "holder", Int64);
+
+	types->DefineField("VMInvokable", "signature", pInt64);
+	types->DefineField("VMInvokable", "holder", pInt64);
+
 	types->CloseStruct("VMInvokable");
 }
 
@@ -823,124 +832,125 @@ SOMppMethod::doSend(OMR::JitBuilder::BytecodeBuilder *builder, OMR::JitBuilder::
 {
 	VMSymbol* signature = static_cast<VMSymbol*>(method->GetConstant(bytecodeIndex));
 	int numOfArgs = Signature::GetNumberOfArguments(signature);
-	OMR::JitBuilder::BytecodeBuilder *genericSend = nullptr;
-	OMR::JitBuilder::BytecodeBuilder *merge = nullptr;
+	
 	uint8_t code = method->bytecodes[bytecodeIndex+10];
 
 #if SOM_METHOD_DEBUG
 	fprintf(stderr, " %s ", signature->GetChars());
 #endif
 
-//	std::vector<OMR::JitBuilder::IlValue*> args;
-//	args.reserve(2);
-
-//	for(int i = 0; i < numOfArgs; ++i) {
-//	  args.push_back(PICK(builder, numOfArgs - 1 - i));
-//	}
-
-//	args.push_back(builder->Load("interpreter"));
-//	args.push_back(builder->Load("frame"));
-//
-//	char* className = method->GetHolder()->GetName()->GetChars();
-//	std::string methodName = std::string(className) + ">>#" + signature->GetChars();
-
-//	builder->CallVirtual(signature->GetChars(), 2, args.data());
-
-	// sendResult : pInt64
-//	builder->Store("sendResult",
-//	builder->      LoadAt(ppInt64,
-//	builder-> 	      LoadIndirect("VMFrame", "stack_ptr",
-//	builder->	 		   Load("frame"))));
-
-//	DROP(builder, numOfArgs);
-//	PUSH(builder, builder->Load("sendResult"));
-//
-//	builder->AddFallThroughBuilder(fallThrough);
-//
-//	return;
-
-	INLINE_STATUS status = doInlineIfPossible(&builder, &genericSend, &merge, signature, bytecodeIndex);
-
-	if (status != INLINE_FAILED) {
-		builder->Goto(merge);
-	} else {
-		genericSend = builder;
-		merge = builder;
-	}
-
-	if (status != INLINE_SUCCESSFUL_NO_GENERIC_PATH_REQUIRED) {
-	        // receiverClass : Int64
-		genericSend->Store("receiverClass",
-		genericSend->	Call("getClass", 1, PICK(genericSend, numOfArgs - 1)));
-
-		// going to call out of line helper so commit the stack
-		COMMIT(genericSend);
-
-		// invokable : Int64
-		genericSend->Store("invokable",
-		genericSend->	Call("getInvokable", 2,
-		genericSend->		Load("receiverClass"),
-		genericSend->		ConstAddress((int64_t*)signature)));
-
-		// return : Int64
-		genericSend->Store("return",
-		genericSend->	Call("doSendIfRequired", 6,
-		genericSend->		Load("interpreter"),
-		genericSend->		Load("frame"),
-		genericSend->		Load("invokable"),
-					PICK(genericSend, numOfArgs - 1),
-		genericSend->		ConstInt64((int64_t)signature),
-		genericSend->		ConstInt64((int64_t)bytecodeIndex)));
-
-		OMR::JitBuilder::IlBuilder *bail = nullptr;
-
-		genericSend->IfThen(&bail,
-		genericSend->	EqualTo(
-		genericSend->		Load("return"),
-		genericSend->		ConstInt64(-1)));
-
-		justReturn(bail);
-
-		// sendResult : pInt64
-		genericSend->Store("sendResult",
-		genericSend->	 LoadAt(ppInt64,
-		genericSend->		LoadIndirect("VMFrame", "stack_ptr",
-		genericSend->			Load("frame"))));
-
-		OMR::JitBuilder::BytecodeBuilder *restartIfRequired = OrphanBytecodeBuilder(bytecodeIndex, Bytecode::GetBytecodeName(BC_SEND));
-		genericSend->IfCmpNotEqual(&restartIfRequired,
-		genericSend->	Load("return"),
-		genericSend->	ConstInt64((int64_t)bytecodeIndex));
-
-		DROPALL(restartIfRequired);
-
-		OMR::JitBuilder::BytecodeBuilder *start = bytecodeBuilderTable[0];
-		restartIfRequired->Goto(start);
-
-		if (status != INLINE_FAILED) {
-			genericSend->Goto(merge);
-		}
-	}
+	//	INLINE_STATUS status = doInlineIfPossible(&builder, &genericSend, &merge, signature, bytecodeIndex);
 
 	builder->Store("receiverClass",
-		builder->	Call("getClass", 1, PICK(builder, numOfArgs - 1)));
-	builder->Store("invokable",
-		builder->Call("getInvokableByDispatch", 3, Load("receiverClass"), builder->Const(signature),builder->ConstInt8(code)));
-//	OMR::JitBuilder::IlValue *inv = builder->LoadAt(pVMInvokable,builder->IndexAt(ppVMInvokable,dp,builder->Const(code)));
-//	OMR::JitBuilder::IlValue *signatureInTable = builder->LoadIndirect("Int64","signature",inv);
-//	OMR::JitBuilder::BytecodeBuilder *fast_path = OrphanBytecodeBuilder(bytecodeIndex, Bytecode::GetBytecodeName(BC_SEND));
-//	builder->IfCmpEqual(&fast_path,signatureInTable,builder->Const(signature));
-//	fast_path->Call("invokeHelper",3,fast_path->Load("interpreter"),fast_path->Load("frame"),fast_path->Load("invokable"));
-	builder->Call("invokeHelper",3,builder->Load("interpreter"),builder->Load("frame"),builder->Load("invokable"));
-	builder->Store("sendResult",
-        builder->	 LoadAt(ppInt64,
-	builder->		LoadIndirect("VMFrame", "stack_ptr",
-	builder->			Load("frame"))));
-	merge = builder;
-	//builder->Goto(merge);
-        
+	builder->	Call("getClass", 1, PICK(builder, numOfArgs - 1)));
+
+	builder->Store("pDispatchTable",
+	builder->       Call("getAddressOfDispatchTable", 1, Load("receiverClass")));
+
+	OMR::JitBuilder::BytecodeBuilder *lookup = OrphanBytecodeBuilder(bytecodeIndex, Bytecode::GetBytecodeName(BC_SEND));
+
+	builder->AddFallThroughBuilder(lookup);
+
+	OMR::JitBuilder::IlValue *inv = lookup->LoadAt(pVMInvokable,
+					lookup->       IndexAt(ppVMInvokable,
+					lookup->	       Load("pDispatchTable"),
+                                        lookup->               ConstInt8(code)));
+
+        OMR::JitBuilder::IlValue *signatureInTable = lookup->LoadIndirect("pInt64", "signature", inv);
+
+	OMR::JitBuilder::BytecodeBuilder *fastPath = OrphanBytecodeBuilder(bytecodeIndex, Bytecode::GetBytecodeName(BC_SEND));
+	OMR::JitBuilder::BytecodeBuilder *slowPath = OrphanBytecodeBuilder(bytecodeIndex, Bytecode::GetBytecodeName(BC_SEND));
+	OMR::JitBuilder::BytecodeBuilder *merge = OrphanBytecodeBuilder(bytecodeIndex, Bytecode::GetBytecodeName(BC_SEND));
+
+	COMMIT(lookup);
+	
+	lookup->Store("card",
+	lookup->      Call("getSignatureCard", 1,
+			   signatureInTable));
+	
+	lookup->IfCmpEqual(&fastPath,
+        lookup->	   Load("card"),
+	lookup->           ConstInt64(signature->GetCard())); //TODO: relocate signature!
+
+	COMMIT(fastPath);
+
+	fastPath->Call("invokeHelper", 3,
+	fastPath->     Load("interpreter"),
+        fastPath->     Load("frame"),
+        fastPath->     Load("invokable"));
+
+	fastPath->Goto(merge);
+
+	COMMIT(lookup);
+
+	lookup->Store("code",
+	lookup->      Call("selectorMismatchHandler", 2,
+        lookup->           ConstInt64(signature->GetCard()),
+        lookup->           Load("receiverClass")));
+
+	OMR::JitBuilder::BytecodeBuilder *patcher = OrphanBytecodeBuilder(bytecodeIndex, Bytecode::GetBytecodeName(BC_SEND));
+
+	lookup->IfCmpNotEqual(&patcher,
+	lookup->              Load("code"),
+        lookup->              ConstInt64(-1)); //TODO: relocate signature!
+
+	COMMIT(patcher);
+
+	patcher->Call("patchDispatchTableLoad", 2,
+	patcher->     ConstInt64(signature->GetCard()),
+	patcher->     Load("code"));
+
+	patcher->Goto(lookup);
+
+	// going to call out of line helper so commit the stack
+	COMMIT(lookup);
+
+	// invokable : Int64
+	lookup->Store("invokable",
+	lookup->	Call("getInvokable", 2,
+	lookup->		Load("receiverClass"),
+	lookup->		ConstAddress((int64_t*)signature)));
+
+	// return : Int64
+	lookup->Store("return",
+        lookup->	Call("doSendIfRequired", 6,
+        lookup->	     Load("interpreter"),
+        lookup->	     Load("frame"),
+        lookup->	     Load("invokable"),
+			     PICK(builder, numOfArgs - 1),
+        lookup->	     ConstInt64((int64_t)signature),
+	lookup->	     ConstInt64((int64_t)bytecodeIndex)));
+
+	OMR::JitBuilder::IlBuilder *bail = nullptr;
+
+	lookup->IfThen(&bail,
+	lookup->	EqualTo(
+        lookup->		Load("return"),
+	lookup->		ConstInt64(-1)));
+
+	justReturn(bail);
+
+	OMR::JitBuilder::BytecodeBuilder *restartIfRequired = OrphanBytecodeBuilder(bytecodeIndex, Bytecode::GetBytecodeName(BC_SEND));
+
+	lookup->IfCmpNotEqual(&restartIfRequired,
+	lookup->	Load("return"),
+	lookup->	ConstInt64((int64_t)bytecodeIndex));
+
+	DROPALL(restartIfRequired);
+
+	OMR::JitBuilder::BytecodeBuilder *start = bytecodeBuilderTable[0];
+	restartIfRequired->Goto(start);
+
+	lookup->AddFallThroughBuilder(merge);
+
+	merge->Store("sendResult",
+        merge->	     LoadAt(ppInt64,
+	merge->		    LoadIndirect("VMFrame", "stack_ptr",
+	merge->		    Load("frame"))));
+
 	DROP(merge, numOfArgs);
 	PUSH(merge, merge->Load("sendResult"));
+	
 	merge->AddFallThroughBuilder(fallThrough);
 }
 

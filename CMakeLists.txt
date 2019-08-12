@@ -4,7 +4,7 @@ project (SOMPP)
 # set(CMAKE_PROJECT_ROOT ${CMAKE_CURRENT_SOURCE_DIR})
 # set(CMAKE_CXX_STANDARD 14)
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIE")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}") # -fsanitize=thread")
 
 add_subdirectory(omr)
 
