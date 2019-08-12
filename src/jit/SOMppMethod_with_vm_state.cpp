@@ -832,7 +832,7 @@ SOMppMethod::doSend(OMR::JitBuilder::BytecodeBuilder *builder, OMR::JitBuilder::
 {
 	VMSymbol* signature = static_cast<VMSymbol*>(method->GetConstant(bytecodeIndex));
 	int numOfArgs = Signature::GetNumberOfArguments(signature);
-	
+
 	uint8_t code = method->bytecodes[bytecodeIndex+10];
 
 #if SOM_METHOD_DEBUG
@@ -844,17 +844,19 @@ SOMppMethod::doSend(OMR::JitBuilder::BytecodeBuilder *builder, OMR::JitBuilder::
 	builder->Store("receiverClass",
 	builder->	Call("getClass", 1, PICK(builder, numOfArgs - 1)));
 
-	builder->Store("pDispatchTable",
-	builder->       Call("getAddressOfDispatchTable", 1, Load("receiverClass")));
-
 	OMR::JitBuilder::BytecodeBuilder *lookup = OrphanBytecodeBuilder(bytecodeIndex, Bytecode::GetBytecodeName(BC_SEND));
 
 	builder->AddFallThroughBuilder(lookup);
 
-	OMR::JitBuilder::IlValue *inv = lookup->LoadAt(pVMInvokable,
-					lookup->       IndexAt(ppVMInvokable,
-					lookup->	       Load("pDispatchTable"),
-                                        lookup->               ConstInt8(code)));
+	lookup->Store("pDispatchTable",
+	lookup->       Call("getAddressOfDispatchTable", 1,
+	lookup->       Load("receiverClass")));
+	
+	OMR::JitBuilder::IlValue *inv = lookup->LoadAtWithPatchKey(pVMInvokable,
+					lookup->                   IndexAt(ppVMInvokable,
+					lookup->	                   Load("pDispatchTable"),
+                                        lookup->                           ConstInt8(code)),
+								   signature->GetCard());
 
         OMR::JitBuilder::IlValue *signatureInTable = lookup->LoadIndirect("VMInvokable", "signature", inv);
 
@@ -863,11 +865,11 @@ SOMppMethod::doSend(OMR::JitBuilder::BytecodeBuilder *builder, OMR::JitBuilder::
 	OMR::JitBuilder::BytecodeBuilder *merge = OrphanBytecodeBuilder(bytecodeIndex, Bytecode::GetBytecodeName(BC_SEND));
 
 	COMMIT(lookup);
-	
+
 	lookup->Store("card",
 	lookup->      Call("getSignatureCard", 1,
 			   signatureInTable));
-	
+
 	lookup->IfCmpEqual(&fastPath,
         lookup->	   Load("card"),
 	lookup->           ConstInt64(signature->GetCard())); //TODO: relocate signature!
@@ -950,7 +952,7 @@ SOMppMethod::doSend(OMR::JitBuilder::BytecodeBuilder *builder, OMR::JitBuilder::
 
 	DROP(merge, numOfArgs);
 	PUSH(merge, merge->Load("sendResult"));
-	
+
 	merge->AddFallThroughBuilder(fallThrough);
 }
 
