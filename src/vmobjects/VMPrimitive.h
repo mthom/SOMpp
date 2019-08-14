@@ -55,7 +55,10 @@ public:
     std::vector<fomrobject_t*> GetFieldPtrs() {
       std::vector<fomrobject_t*> fields{VMInvokable::GetFieldPtrs()};
 
-      //      fields.push_back((fomrobject_t*) &routine);
+      // PrimitiveRoutine's are not allocated via the GC! Therefore this shouldn't be scanned.
+//      if (routine) {
+//	 fields.push_back((fomrobject_t*) &routine);
+//      }
 
       return fields;
     }

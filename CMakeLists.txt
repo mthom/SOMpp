@@ -158,7 +158,7 @@ target_link_libraries(omr_som_gc_glue
 target_include_directories(omr_som_gc_glue INTERFACE
    "${OMR_GLUE_INCLUDE}" "${OMR_INCLUDE}" "${VM_INCLUDE}")
 
-add_definitions(-DDEFAULT_OMR_JIT_ON=true -DGC_TYPE=OMR_GARBAGE_COLLECTION) # -DUSE_TAGGING=false -DCACHE_INTEGER=false)
+add_definitions(-DDEFAULT_OMR_JIT_ON=false -DGC_TYPE=OMR_GARBAGE_COLLECTION) # -DUSE_TAGGING=false -DCACHE_INTEGER=false)
 #  was OMR_GARBAGE_COLLECTION
 
 add_executable(som

@@ -626,7 +626,7 @@ void Interpreter::doSend(long bytecodeIndex) {
 #endif
 
     //uint64_t card = *(uint64_t*) (currentBytecodes + bytecodeIndex + 2);
-    uint8_t code  = currentBytecodes[bytecodeIndex+2+sizeof(uint64_t)];
+    uint8_t code = currentBytecodes[bytecodeIndex+2+sizeof(uint64_t)];
     
     VMInvokable* invokable = findMethod(code, signature, receiverClass);
 

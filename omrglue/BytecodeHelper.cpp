@@ -480,28 +480,72 @@ BytecodeHelper::printObject(int64_t objectPtr, int64_t object2Ptr, int64_t signa
 }
 
 int64_t
-BytecodeHelper::invokeHelper(int64_t* interp, VMFrame* framePtr, int64_t invokablePtr)
+BytecodeHelper::invokeHelper(int64_t* interp, VMFrame* framePtr, int64_t invokablePtr, int64_t bytecodeIndex)
 {
 #define VALUE_FOR_INVOKE_HELPER_LINE LINETOSTR(__LINE__)
         VMInvokable *invokable = reinterpret_cast<VMInvokable*>(invokablePtr);
+	VMFrame* frame = reinterpret_cast<VMFrame*>(framePtr);
 	Interpreter *interpreter = (Interpreter *)interp;
-	invokable->Invoke(interpreter,framePtr);
-	return 0;
+
+	interpreter->setBytecodeIndexGlobal((long)bytecodeIndex);
+	frame->SetBytecodeIndex((long)bytecodeIndex);
+
+	invokable->Invoke(interpreter, frame);
+
+	if (interpreter->GetReturnCount() > 0) {
+	  /* coming back from a JIT method on a return non local path */
+	  interpreter->DecrementReturnCount();
+	  frame->SetIsJITFrame(false);
+	  return -1;
+	}
+
+	if (GetHeap<HEAP_CLS>()->isCollectionTriggered()) {
+	  /* Do a GC at the same point the interpreter would have */
+	  interpreter->GetFrame()->SetBytecodeIndex(interpreter->getBytecodeIndexGlobal());
+	  GetHeap<HEAP_CLS>()->FullGC();
+	  /* TODO set frame, method, literals, sp, etc. */
+	  /* not needed yet because objects do not move??? */
+	}
+
+	if (frame != interpreter->GetFrame()) {
+	  interpreter->setBytecodeIndexGlobal(interpreter->GetFrame()->GetBytecodeIndex());
+	  Interpreter::runInterpreterLoop(interpreter);
+	  if (interpreter->GetReturnCount() > 0) {
+	    /* coming from a return non local */
+	    interpreter->DecrementReturnCount();
+	    frame->SetIsJITFrame(false);
+	    return -1;
+	  }
+	}
+
+	if (frame != interpreter->GetFrame()) {
+	  printf("Incorrect frame pointer in send. Frame %lx but interpreter->GetFrame() %lx\n", (int64_t)frame, (int64_t)interpreter->GetFrame());
+	  /* TODO replace with a runtime assert */
+	  int *x = 0;
+	  *x = 0;
+	}
+
+	return interpreter->GetFrame()->GetBytecodeIndex();
 }
 
 void
-BytecodeHelper::patchDispatchTableLoad(uint64_t card, uint64_t code)
+BytecodeHelper::patchDispatchTableLoad(uint64_t assumptionID, uint64_t code)
 {
 #define VALUE_FOR_PATCH_DISPATCH_TABLE_LOAD_LINE LINETOSTR(__LINE__)
-        invalidateJitAssumption(card, code);
+        invalidateJitAssumption(assumptionID, code);
 }
 
 int64_t 
-BytecodeHelper::getSignatureCard(int64_t signaturePtr)
+BytecodeHelper::getInvokableCard(int64_t invokablePtr)
 {
 #define VALUE_FOR_GET_SIGNATURE_CARD_LINE LINETOSTR(__LINE__)
-        VMSymbol *signature = reinterpret_cast<VMSymbol *>(signaturePtr);
-	return signature->GetCard();
+        VMInvokable *invokable = reinterpret_cast<VMInvokable *>(invokablePtr);
+
+	if (invokable) {
+	  return invokable->GetCard();
+	} else {
+	  return -1;
+	}
 }
 
 int64_t
@@ -531,7 +575,7 @@ BytecodeHelper::getAddressOfDispatchTable(int64_t classPtr)
 {
 #define VALUE_FOR_GET_ADDRESS_OF_DISPATCH_TABLE_LINE LINETOSTR(__LINE__)
         VMClass *clazz = reinterpret_cast<VMClass *>(classPtr);
-	return reinterpret_cast<int64_t>(&clazz->GetDispatchTable());
+	return reinterpret_cast<int64_t>(&clazz->GetDispatchTable()[0]);
 }
 
 int64_t
@@ -591,4 +635,4 @@ const char* BytecodeHelper::GET_INVOKABLE_BY_DISPATCH_LINE = VALUE_FOR_GET_INVOK
 const char* BytecodeHelper::GET_ADDRESS_OF_DISPATCH_TABLE_LINE = VALUE_FOR_GET_ADDRESS_OF_DISPATCH_TABLE_LINE;
 const char* BytecodeHelper::SELECTOR_MISMATCH_HANDLER_LINE = VALUE_FOR_SELECTOR_MISMATCH_HANDLER_LINE;
 const char* BytecodeHelper::PATCH_DISPATCH_TABLE_LOAD_LINE = VALUE_FOR_PATCH_DISPATCH_TABLE_LOAD_LINE;
-const char* BytecodeHelper::GET_SIGNATURE_CARD_LINE = VALUE_FOR_GET_SIGNATURE_CARD_LINE;
+const char* BytecodeHelper::GET_INVOKABLE_CARD_LINE = VALUE_FOR_GET_SIGNATURE_CARD_LINE;

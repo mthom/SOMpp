@@ -116,7 +116,7 @@ void BytecodeGenerator::EmitCard(MethodGenerationContext* mgenc, uint64_t card) 
     mgenc->AddBytecode(card);
 
     for(int i = 0; i < 7; ++i) {
-      mgenc->AddBytecode(card >>= 8);
+       mgenc->AddBytecode(card >>= 8);
     }
 }
 

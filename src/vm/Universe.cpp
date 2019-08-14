@@ -326,29 +326,18 @@ VMMethod* Universe::createBootstrapMethod(VMClass* holder, long numArgsOfMsgSend
 
 #if GC_TYPE == OMR_GARBAGE_COLLECTION
 void Universe::compileAOTMethods() {
-   uint32_t rc = 0;
+   if (!enableJIT && !initializeJit()) {
+     Universe::ErrorPrint("Could not initialize JIT\n");
+     GetUniverse()->Quit(-1);
+   }
 
+   uint32_t rc = 0;
+   
    for (auto& methodStub : aotMethodQueue) {
      OMR::JitBuilder::TypeDictionary types;
 
      SOMppMethod methodBuilder(&types, methodStub, false);
      void *entry = nullptr;
-
-     for (auto& otherStub : aotMethodQueue) {
-         if (methodStub == otherStub)
-	     continue;
-
-//	 char* className = otherStub->GetHolder()->GetName()->GetChars();
-	 char* signature = otherStub->GetSignature()->GetChars();
-
-//	 char* methodName = new char[64];
-
-//	 sprintf(methodName, "%s>>#%s", className, signature);
-
-	 std::cout << "adding " << signature << "\n";
-
-	 methodBuilder.defineFunction(signature);
-     }
 
      rc = (*compileMethodBuilder)(&methodBuilder, &entry);
 
@@ -797,9 +786,9 @@ VMObject* Universe::InitializeGlobals() {
     symbolIfTrue  = _store_ptr(SymbolForChars("ifTrue:"));
     symbolIfFalse = _store_ptr(SymbolForChars("ifFalse:"));
 
-    if (enableJIT) {
-       compileAOTMethods();
-    }
+    //    if (enableJIT) {
+    compileAOTMethods();
+       //    }
 
     return systemObject;
 }
@@ -947,7 +936,7 @@ void Universe::LoadSystemClass(VMClass* systemClass) {
     if (result->HasPrimitives() || result->GetClass()->HasPrimitives())
        result->LoadPrimitives(classPath);
 
-    // enqueueAOTMethods(systemClass);
+    enqueueAOTMethods(systemClass);
 }
 
 VMArray* Universe::NewArray(long size) const {

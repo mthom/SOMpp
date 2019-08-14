@@ -84,7 +84,7 @@ public:
 	static int64_t printObject(int64_t objectPtr, int64_t object2Ptr, int64_t signaturePtr);
         static const char* PRINT_OBJECT_LINE;
 
-        static int64_t invokeHelper(int64_t* interp, VMFrame* framePtr, int64_t invokablePtr);
+        static int64_t invokeHelper(int64_t* interp, VMFrame* framePtr, int64_t invokablePtr, int64_t bytecodeIndex);
         static const char *INVOKE_HELPER_LINE;
         static int64_t getInvokableByDispatch(int64_t receiverPtr, int64_t signature, int8_t code);
         static const char* GET_INVOKABLE_BY_DISPATCH_LINE;
@@ -94,8 +94,8 @@ public:
         static const char* SELECTOR_MISMATCH_HANDLER_LINE;
         static void patchDispatchTableLoad(uint64_t card, uint64_t code);
         static const char* PATCH_DISPATCH_TABLE_LOAD_LINE;
-        static int64_t getSignatureCard(int64_t signaturePtr);
-        static const char* GET_SIGNATURE_CARD_LINE;
+        static int64_t getInvokableCard(int64_t invokablePtr);
+        static const char* GET_INVOKABLE_CARD_LINE;
 };
 
 #endif /* BYTECODEHELPER_INCL */
