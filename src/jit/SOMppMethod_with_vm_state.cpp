@@ -366,6 +366,7 @@ SOMppMethod::defineFunctions()
 	DefineFunction((char *)"selectorMismatchHandler", (char *)BytecodeHelper::BYTECODEHELPER_FILE, (char *)BytecodeHelper::SELECTOR_MISMATCH_HANDLER_LINE, (void *)&BytecodeHelper::selectorMismatchHandler, Int64, 2, Int64, Int64);
 	DefineFunction((char *)"patchDispatchTableLoad", (char *)BytecodeHelper::BYTECODEHELPER_FILE, (char *)BytecodeHelper::PATCH_DISPATCH_TABLE_LOAD_LINE, (void *)&BytecodeHelper::patchDispatchTableLoad, NoType, 2, Int64, Int64);
 	DefineFunction((char *)"getInvokableCard", (char *)BytecodeHelper::BYTECODEHELPER_FILE, (char *)BytecodeHelper::GET_INVOKABLE_CARD_LINE, (void *)&BytecodeHelper::getInvokableCard, Int64, 1, Int64);
+	DefineFunction((char *)"handleUnknownGlobal", (char *)BytecodeHelper::BYTECODEHELPER_FILE, (char *)BytecodeHelper::HANDLE_UNKNOWN_GLOBAL_LINE, (void *)&BytecodeHelper::handleUnknownGlobal, Int64, 4, Int64, Int64, Int64, Int64);
 }
 
 void
@@ -1137,8 +1138,14 @@ SOMppMethod::pushGlobal(OMR::JitBuilder::BytecodeBuilder *builder, VMSymbol* glo
 	builder->IfThen(&globalIsNullPtr,
 	builder->	EqualTo(global,
         builder->		NullAddress()));
-
-	/* TODO Come back and handle */
+	
+	globalIsNullPtr->Call("handleUnknownGlobal", 4,
+			      Load("interpreter"),
+			      Load("frame"),
+			      getSelf(globalIsNullPtr),
+	globalIsNullPtr->     ConstInt64((int64_t)globalName));
+	
+	/*
 	globalIsNullPtr->Call("printString", 1,
 	globalIsNullPtr->	ConstInt64((int64_t)"\n\n\n doPushGlobal crashing due to unknown global\n\n\n\n"));
 	//WTF
@@ -1146,7 +1153,7 @@ SOMppMethod::pushGlobal(OMR::JitBuilder::BytecodeBuilder *builder, VMSymbol* glo
 	globalIsNullPtr->	ConvertTo(pInt64,
 	globalIsNullPtr->		ConstInt64(0)),
 	globalIsNullPtr->	ConstInt64(0));
-
+	*/
 	justReturn(globalIsNullPtr);
 
 	PUSH(builder, global);

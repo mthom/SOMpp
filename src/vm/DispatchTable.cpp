@@ -9,9 +9,6 @@ template <std::size_t N>
 DispatchTable<N> DispatchTable<N>::defaultDispatchTable {};
 
 template <std::size_t N>
-VMInvokableStub DispatchTable<N>::selectorMismatchRaiser(NewCard());
-
-template <std::size_t N>
 VMInvokable*& DispatchTable<N>::operator [](uint8_t index)
 {
    return _entries[index];

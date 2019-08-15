@@ -1,6 +1,5 @@
 #pragma once
 
-#include "../vmobjects/VMInvokableStub.h"
 #include "../vmobjects/VMMethod.h"
 #include "../vmobjects/VMObjectBase.h"
 
@@ -25,7 +24,7 @@ public:
      fields.reserve(256);
 
      for(int i = 0; i < 256; ++i) {
-        if (_entries[i] && _entries[i] != &selectorMismatchRaiser) {
+        if (_entries[i] && _entries[i] != nullptr) {//&selectorMismatchRaiser) {
 	   fields.push_back((fomrobject_t*) &_entries[i]);
 	}
      }
@@ -58,5 +57,4 @@ private:
   }
 
   VMInvokable* _entries[N];
-  static VMInvokableStub selectorMismatchRaiser;
 };

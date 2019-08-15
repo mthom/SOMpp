@@ -535,10 +535,10 @@ BytecodeHelper::patchDispatchTableLoad(uint64_t assumptionID, uint64_t code)
         invalidateJitAssumption(assumptionID, code);
 }
 
-int64_t 
+int64_t
 BytecodeHelper::getInvokableCard(int64_t invokablePtr)
 {
-#define VALUE_FOR_GET_SIGNATURE_CARD_LINE LINETOSTR(__LINE__)
+#define VALUE_FOR_GET_INVOKABLE_CARD_LINE LINETOSTR(__LINE__)
         VMInvokable *invokable = reinterpret_cast<VMInvokable *>(invokablePtr);
 
 	if (invokable) {
@@ -568,6 +568,37 @@ BytecodeHelper::selectorMismatchHandler(int64_t card, int64_t classPtr)
 	uint8_t currentCode = VMClass::GetSelectorCode(card);
 	clazz->GetDispatchTable()[currentCode] = method;
 	return currentCode;
+}
+
+int64_t
+BytecodeHelper::handleUnknownGlobal(int64_t interp, int64_t framePtr, int64_t receiverPtr, int64_t globalNamePtr)
+{
+#define VALUE_FOR_HANDLE_UNKNOWN_GLOBAL_LINE LINETOSTR(__LINE__)
+        VMSymbol *globalName = reinterpret_cast<VMSymbol*>(globalNamePtr);
+	VMFrame* frame = reinterpret_cast<VMFrame*>(framePtr);
+	Interpreter *interpreter = (Interpreter *)interp;
+
+        vm_oop_t self = (vm_oop_t)receiverPtr;
+        vm_oop_t arguments[] = {globalName};
+
+        //check if there is enough space on the stack for this unplanned Send
+        //unknowGlobal: needs 2 slots, one for "this" and one for the argument
+        long additionalStackSlots = 2 - interpreter->GetFrame()->RemainingStackSize();
+        if (additionalStackSlots > 0) {
+	   interpreter->GetFrame()->SetBytecodeIndex(interpreter->getBytecodeIndexGlobal());
+	   //copy current frame into a bigger one and replace the current frame
+	   interpreter->SetFrame(VMFrame::EmergencyFrameFrom(interpreter->GetFrame(), additionalStackSlots));
+        }
+
+        AS_OBJ(self)->Send(interpreter, "unknownGlobal:", arguments, 1);
+	Interpreter::runInterpreterLoop(interpreter);
+
+	if (frame != interpreter->GetFrame()) {
+	   printf("Came back from a doesNotUnderstand and the frame was grown!!\n");
+	   /* TODO replace with a runtime assert */
+	   int *x = 0;
+	   *x = 0;
+	}
 }
 
 int64_t
@@ -635,4 +666,5 @@ const char* BytecodeHelper::GET_INVOKABLE_BY_DISPATCH_LINE = VALUE_FOR_GET_INVOK
 const char* BytecodeHelper::GET_ADDRESS_OF_DISPATCH_TABLE_LINE = VALUE_FOR_GET_ADDRESS_OF_DISPATCH_TABLE_LINE;
 const char* BytecodeHelper::SELECTOR_MISMATCH_HANDLER_LINE = VALUE_FOR_SELECTOR_MISMATCH_HANDLER_LINE;
 const char* BytecodeHelper::PATCH_DISPATCH_TABLE_LOAD_LINE = VALUE_FOR_PATCH_DISPATCH_TABLE_LOAD_LINE;
-const char* BytecodeHelper::GET_INVOKABLE_CARD_LINE = VALUE_FOR_GET_SIGNATURE_CARD_LINE;
+const char* BytecodeHelper::GET_INVOKABLE_CARD_LINE = VALUE_FOR_GET_INVOKABLE_CARD_LINE;
+const char* BytecodeHelper::HANDLE_UNKNOWN_GLOBAL_LINE = VALUE_FOR_HANDLE_UNKNOWN_GLOBAL_LINE;

@@ -96,6 +96,8 @@ public:
         static const char* PATCH_DISPATCH_TABLE_LOAD_LINE;
         static int64_t getInvokableCard(int64_t invokablePtr);
         static const char* GET_INVOKABLE_CARD_LINE;
+        static int64_t handleUnknownGlobal(int64_t interp, int64_t framePtr, int64_t receiverPtr, int64_t globalNamePtr);
+        static const char* HANDLE_UNKNOWN_GLOBAL_LINE;
 };
 
 #endif /* BYTECODEHELPER_INCL */
