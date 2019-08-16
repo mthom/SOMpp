@@ -25,6 +25,9 @@
  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  THE SOFTWARE.
  */
+
+#include <functional>
+
 //some MACROS for integer tagging
 /**
  * max value for tagged integers
@@ -141,6 +144,4 @@ inline typename T::Stored* _store_ptr(T* vm_val) {
 
 #define store_ptr(field, val) field = _store_ptr(val); write_barrier(this, val)
 
-typedef gc_oop_t (*walk_heap_fn)(gc_oop_t);
-
-
+typedef std::function<gc_oop_t(gc_oop_t)> walk_heap_fn; //gc_oop_t (*walk_heap_fn)(gc_oop_t);
