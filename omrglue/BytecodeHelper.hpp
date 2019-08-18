@@ -39,7 +39,7 @@ public:
 	static int64_t getSuperClass(int64_t object);
 	static const char* GET_SUPER_CLASS_LINE;
 
-	static int64_t* getGlobal(int64_t symbol);
+        static void getGlobal(int64_t interp, int64_t framePtr, int64_t receiverPtr, int64_t globalNamePtr);
 	static const char* GET_GLOBAL_LINE;
 
 	static int64_t getNewBlock(VMFrame* frame, int64_t blockMethod, int64_t numOfArgs);
@@ -96,7 +96,7 @@ public:
         static const char* PATCH_DISPATCH_TABLE_LOAD_LINE;
         static int64_t getInvokableCard(int64_t invokablePtr);
         static const char* GET_INVOKABLE_CARD_LINE;
-        static int64_t handleUnknownGlobal(int64_t interp, int64_t framePtr, int64_t receiverPtr, int64_t globalNamePtr);
+        static void handleUnknownGlobal(int64_t interp, int64_t framePtr, int64_t receiverPtr, int64_t globalNamePtr);
         static const char* HANDLE_UNKNOWN_GLOBAL_LINE;
 };
 

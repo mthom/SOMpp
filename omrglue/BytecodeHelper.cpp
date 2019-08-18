@@ -80,12 +80,44 @@ BytecodeHelper::getSuperClass(int64_t object)
 	return (int64_t)clazz->GetSuperClass();
 }
 
-int64_t*
-BytecodeHelper::getGlobal(int64_t symbol)
+void
+BytecodeHelper::getGlobal(int64_t interp, int64_t framePtr, int64_t receiverPtr, int64_t globalNamePtr)
 {
 #define VALUE_FOR_GET_GLOBAL_LINE LINETOSTR(__LINE__)
 	//fprintf(stderr, "get global type %p\n", symbol);
-	return (int64_t*)GetUniverse()->GetGlobal((VMSymbol*)symbol);
+        VMSymbol *symbol = reinterpret_cast<VMSymbol*>(globalNamePtr);
+	VMFrame* frame = reinterpret_cast<VMFrame*>(framePtr);
+
+	vm_oop_t result = GetUniverse()->GetGlobal(symbol);
+
+	if (result == nullptr) {
+	   Interpreter *interpreter = (Interpreter *)interp;
+
+	   vm_oop_t self = (vm_oop_t)receiverPtr;
+	   vm_oop_t arguments[] = {symbol};
+
+	   //check if there is enough space on the stack for this unplanned Send
+	   //unknowGlobal: needs 2 slots, one for "this" and one for the argument
+	   long additionalStackSlots = 2 - interpreter->GetFrame()->RemainingStackSize();
+	   if (additionalStackSlots > 0) {
+	     interpreter->GetFrame()->SetBytecodeIndex(interpreter->getBytecodeIndexGlobal());
+	     //copy current frame into a bigger one and replace the current frame
+	     interpreter->SetFrame(VMFrame::EmergencyFrameFrom(interpreter->GetFrame(), additionalStackSlots));
+	   }
+
+	   AS_OBJ(self)->Send(interpreter, "unknownGlobal:", arguments, 1);
+	   //	Interpreter::runInterpreterLoop(interpreter);
+	   //	
+	   //
+	   if (frame != interpreter->GetFrame()) {
+	     printf("Came back from a doesNotUnderstand and the frame was grown!!\n");
+	     /* TODO replace with a runtime assert */
+	     int *x = 0;
+	     *x = 0;
+	   }	   
+	} else {
+	   frame->Push(result);
+	}  
 }
 
 int64_t
@@ -570,7 +602,7 @@ BytecodeHelper::selectorMismatchHandler(int64_t card, int64_t classPtr)
 	return currentCode;
 }
 
-int64_t
+void
 BytecodeHelper::handleUnknownGlobal(int64_t interp, int64_t framePtr, int64_t receiverPtr, int64_t globalNamePtr)
 {
 #define VALUE_FOR_HANDLE_UNKNOWN_GLOBAL_LINE LINETOSTR(__LINE__)
@@ -591,8 +623,9 @@ BytecodeHelper::handleUnknownGlobal(int64_t interp, int64_t framePtr, int64_t re
         }
 
         AS_OBJ(self)->Send(interpreter, "unknownGlobal:", arguments, 1);
-	Interpreter::runInterpreterLoop(interpreter);
-
+//	Interpreter::runInterpreterLoop(interpreter);
+//	
+//
 	if (frame != interpreter->GetFrame()) {
 	   printf("Came back from a doesNotUnderstand and the frame was grown!!\n");
 	   /* TODO replace with a runtime assert */

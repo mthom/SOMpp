@@ -49,7 +49,7 @@ public:
     virtual StdString AsDebugString() const;
 
     virtual std::vector<fomrobject_t*> GetFieldPtrs() {
-      return {};
+       return {};
     }
 
 protected:    

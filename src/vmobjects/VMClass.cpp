@@ -54,7 +54,8 @@ VMClass::VMClass(long numberOfFields) :
    dispatchTable = &DispatchTable<256>::defaultDispatchTable;
 }
 
-void VMClass::WalkObjects(walk_heap_fn walk) {
+void VMClass::WalkObjects(walk_heap_fn walk)
+{
     clazz = static_cast<GCClass*>(walk(clazz));
     if (superClass) {
         superClass = static_cast<GCClass*>(walk(superClass));

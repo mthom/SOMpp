@@ -69,6 +69,10 @@ set(JIT_INCLUDE "${CMAKE_CURRENT_SOURCE_DIR}/src/jit")
 set(JIT_SRC # "${JIT_INCLUDE}/SOMppMethod.cpp"
             "${JIT_INCLUDE}/SOMppMethod_with_vm_state.cpp")
 
+set(AOT_INCLUDE "${CMAKE_CURRENT_SOURCE_DIR}/src/aot")
+
+set(AOT_SRC "${AOT_INCLUDE}/BufferWriter.cpp")
+
 set(VM_OBJECTS_INCLUDE "${CMAKE_CURRENT_SOURCE_DIR}/src/vmobjects")
 
 set(VM_OBJECTS_SRC "${VM_OBJECTS_INCLUDE}/AbstractObject.cpp"
@@ -92,7 +96,7 @@ add_library(som_vm INTERFACE)
 
 target_sources(som_vm INTERFACE
   "${VM_SRC}" "${COMPILER_SRC}" "${INTERPRETER_SRC}" "${VM_OBJECTS_SRC}"
-  "${MEMORY_SRC}" "${JIT_SRC}" "${PRIMITIVES_CORE_SRC}"
+  "${MEMORY_SRC}" "${JIT_SRC}" "${PRIMITIVES_CORE_SRC}" "${AOT_SRC}"
   "${PRIMITIVES_SRC}" "${MISC_SRC}" )
 
 target_link_libraries(som_vm INTERFACE jitbuilder omrcore omrvmstartup)

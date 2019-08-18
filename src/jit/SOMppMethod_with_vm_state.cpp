@@ -345,7 +345,7 @@ SOMppMethod::defineFunctions()
 	DefineFunction((char *)"printInt64Hex", (char *)__FILE__, (char *)PRINTINT64HEX_LINE, (void *) &printInt64Hex, NoType, 1, Int64);
 	DefineFunction((char *)"getClass", (char *)BytecodeHelper::BYTECODEHELPER_FILE, (char *)BytecodeHelper::GET_CLASS_LINE, (void *)&BytecodeHelper::getClass, Int64, 1, pInt64);
 	DefineFunction((char *)"getSuperClass", (char *)BytecodeHelper::BYTECODEHELPER_FILE, (char *)BytecodeHelper::GET_SUPER_CLASS_LINE, (void *)&BytecodeHelper::getSuperClass, Int64, 1, Int64);
-	DefineFunction((char *)"getGlobal", (char *)BytecodeHelper::BYTECODEHELPER_FILE, (char *)BytecodeHelper::GET_GLOBAL_LINE, (void *)&BytecodeHelper::getGlobal, pInt64, 1, Int64);
+	DefineFunction((char *)"getGlobal", (char *)BytecodeHelper::BYTECODEHELPER_FILE, (char *)BytecodeHelper::GET_GLOBAL_LINE, (void *)&BytecodeHelper::getGlobal, NoType, 4, Int64, Int64, Int64, Int64);
 	DefineFunction((char *)"getNewBlock", (char *)BytecodeHelper::BYTECODEHELPER_FILE, (char *)BytecodeHelper::GET_NEW_BLOCK_LINE, (void *)&BytecodeHelper::getNewBlock, pVMFrame, 3, pVMFrame, Int64, Int64);
 	DefineFunction((char *)"newInteger", (char *)BytecodeHelper::BYTECODEHELPER_FILE, (char *)BytecodeHelper::NEW_INTEGER_LINE, (void *)&BytecodeHelper::newInteger, Int64, 1, Int64);
 	DefineFunction((char *)"newDouble", (char *)BytecodeHelper::BYTECODEHELPER_FILE, (char *)BytecodeHelper::NEW_DOUBLE_LINE, (void *)&BytecodeHelper::newDouble, Int64, 1, Double);
@@ -366,7 +366,7 @@ SOMppMethod::defineFunctions()
 	DefineFunction((char *)"selectorMismatchHandler", (char *)BytecodeHelper::BYTECODEHELPER_FILE, (char *)BytecodeHelper::SELECTOR_MISMATCH_HANDLER_LINE, (void *)&BytecodeHelper::selectorMismatchHandler, Int64, 2, Int64, Int64);
 	DefineFunction((char *)"patchDispatchTableLoad", (char *)BytecodeHelper::BYTECODEHELPER_FILE, (char *)BytecodeHelper::PATCH_DISPATCH_TABLE_LOAD_LINE, (void *)&BytecodeHelper::patchDispatchTableLoad, NoType, 2, Int64, Int64);
 	DefineFunction((char *)"getInvokableCard", (char *)BytecodeHelper::BYTECODEHELPER_FILE, (char *)BytecodeHelper::GET_INVOKABLE_CARD_LINE, (void *)&BytecodeHelper::getInvokableCard, Int64, 1, Int64);
-	DefineFunction((char *)"handleUnknownGlobal", (char *)BytecodeHelper::BYTECODEHELPER_FILE, (char *)BytecodeHelper::HANDLE_UNKNOWN_GLOBAL_LINE, (void *)&BytecodeHelper::handleUnknownGlobal, Int64, 4, Int64, Int64, Int64, Int64);
+//	DefineFunction((char *)"handleUnknownGlobal", (char *)BytecodeHelper::BYTECODEHELPER_FILE, (char *)BytecodeHelper::HANDLE_UNKNOWN_GLOBAL_LINE, (void *)&BytecodeHelper::handleUnknownGlobal, NoType, 4, Int64, Int64, Int64, Int64);
 }
 
 void
@@ -855,7 +855,7 @@ SOMppMethod::doSend(OMR::JitBuilder::BytecodeBuilder *lookup, OMR::JitBuilder::B
 	lookup->Store("pDispatchTable",
 	lookup->       Call("getAddressOfDispatchTable", 1,
 	lookup->       Load("receiverClass")));
-	
+
 	OMR::JitBuilder::IlValue *inv = lookup->LoadAtWithPatchKey(pVMInvokable,
 					lookup->                   IndexAt(ppVMInvokable,
 					lookup->	                   Load("pDispatchTable"),
@@ -927,7 +927,7 @@ SOMppMethod::doSend(OMR::JitBuilder::BytecodeBuilder *lookup, OMR::JitBuilder::B
 	lookup->	     ConstInt64((int64_t)bytecodeIndex)));
 
 	lookup->AddFallThroughBuilder(merge);
-	
+
 	OMR::JitBuilder::IlBuilder *bail = nullptr;
 
 	merge->IfThen(&bail,
@@ -941,7 +941,7 @@ SOMppMethod::doSend(OMR::JitBuilder::BytecodeBuilder *lookup, OMR::JitBuilder::B
         merge->	     LoadAt(ppInt64,
 	merge->		    LoadIndirect("VMFrame", "stack_ptr",
 	merge->		    Load("frame"))));
-	
+
 	OMR::JitBuilder::BytecodeBuilder *restartIfRequired = NULL;
 
 	merge->IfCmpNotEqual(&restartIfRequired,
@@ -1130,32 +1130,45 @@ void
 SOMppMethod::pushGlobal(OMR::JitBuilder::BytecodeBuilder *builder, VMSymbol* globalName)
 {
         // global : pInt64
-	OMR::JitBuilder::IlValue *global =
-	builder->	Call("getGlobal", 1,
-	builder->		ConstInt64((int64_t)globalName));
+//      OMR::JitBuilder::IlValue *global =
+        builder->Call("getGlobal", 4,
+	builder->     Load("interpreter"),
+	builder->     Load("frame"),
+		      getSelf(builder),
+	builder->     ConstInt64((int64_t)globalName));
 
-	OMR::JitBuilder::IlBuilder *globalIsNullPtr = nullptr;
-	builder->IfThen(&globalIsNullPtr,
-	builder->	EqualTo(global,
-        builder->		NullAddress()));
-	
+	OMR::JitBuilder::IlValue *global =
+        builder->      LoadAt(ppInt64,
+	builder->             LoadIndirect("VMFrame", "stack_ptr",
+        builder->	      Load("frame")));
+
+	/*
+	OMR::JitBuilder::BytecodeBuilder *globalIsNullPtr = nullptr;
+	OMR::JitBuilder::BytecodeBuilder *merge = nullptr;
+
+//	builder->IfThen(&globalIsNullPtr,
+//	builder->	EqualTo(global,
+//      builder->		NullAddress()));
+
+	builder->IfCmpEqual(&globalIsNullPtr, 
+			    global,
+        builder->           NullAddress());
+
+	builder->Goto(&merge);
+
 	globalIsNullPtr->Call("handleUnknownGlobal", 4,
-			      Load("interpreter"),
-			      Load("frame"),
+	globalIsNullPtr->     Load("interpreter"),
+	globalIsNullPtr->     Load("frame"),
 			      getSelf(globalIsNullPtr),
 	globalIsNullPtr->     ConstInt64((int64_t)globalName));
-	
-	/*
-	globalIsNullPtr->Call("printString", 1,
-	globalIsNullPtr->	ConstInt64((int64_t)"\n\n\n doPushGlobal crashing due to unknown global\n\n\n\n"));
-	//WTF
-	globalIsNullPtr->StoreAt(
-	globalIsNullPtr->	ConvertTo(pInt64,
-	globalIsNullPtr->		ConstInt64(0)),
-	globalIsNullPtr->	ConstInt64(0));
-	*/
-	justReturn(globalIsNullPtr);
 
+	TR::IlValue* altGlobal =
+        globalIsNullPtr->      LoadAt(ppInt64,
+	globalIsNullPtr->             LoadIndirect("VMFrame", "stack_ptr",
+        globalIsNullPtr->	      Load("frame")));
+
+	globalIsNullPtr->Goto(merge);
+	*/	
 	PUSH(builder, global);
 }
 
