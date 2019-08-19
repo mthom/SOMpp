@@ -326,7 +326,10 @@ VMMethod* Universe::createBootstrapMethod(VMClass* holder, long numArgsOfMsgSend
 
 #if GC_TYPE == OMR_GARBAGE_COLLECTION
 void Universe::compileAOTMethods() {
-   if (!enableJIT && !initializeJit()) {
+   if (!enableJIT && !initializeJitWithOptions("-Xjit:acceptHugeMethods,enableBasicBlockHoisting,"
+			      "omitFramePointer,useILValidator,enableRelocatableELFGeneration,"
+			      "traceIlGen,traceFull,log=trtrace.log,"
+			      "objectFile=tempmod.o")) {
      Universe::ErrorPrint("Could not initialize JIT\n");
      GetUniverse()->Quit(-1);
    }
@@ -339,10 +342,18 @@ void Universe::compileAOTMethods() {
      SOMppMethod methodBuilder(&types, methodStub, false);
      void *entry = nullptr;
 
-     rc = (*compileMethodBuilder)(&methodBuilder, &entry);
+     if(entry = getCodeEntry(methodStub->GetSignature()->GetChars())){
+       methodStub->compiledMethod = (SOMppFunctionType *)entry;
+       relocateCodeEntry(methodStub->GetSignature()->GetChars(),entry);
+     }
+     else {
 
-     if (0 == rc) {
+       rc = (*compileMethodBuilder)(&methodBuilder, &entry);
+
+       if (0 == rc) {
+         storeCodeEntry(methodStub->GetSignature()->GetChars(),entry);
          methodStub->compiledMethod = (SOMppFunctionType *)entry;
+       }
      }
    }
 }
