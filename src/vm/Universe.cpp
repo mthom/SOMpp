@@ -341,17 +341,21 @@ void Universe::compileAOTMethods() {
 
      SOMppMethod methodBuilder(&types, methodStub, false);
      void *entry = nullptr;
+     
+     std::string methodName(methodStub->GetHolder()->GetName()->GetChars());
+     methodName = methodName+">>#"+methodStub->GetSignature()->GetChars();
 
-     if(entry = getCodeEntry(methodStub->GetSignature()->GetChars())){
+
+     if(entry = getCodeEntry(const_cast<char*>(methodName.c_str()))){
        methodStub->compiledMethod = (SOMppFunctionType *)entry;
-       relocateCodeEntry(methodStub->GetSignature()->GetChars(),entry);
+       relocateCodeEntry(const_cast<char*>(methodName.c_str()),entry);
      }
      else {
-
+       
        rc = (*compileMethodBuilder)(&methodBuilder, &entry);
 
        if (0 == rc) {
-         storeCodeEntry(methodStub->GetSignature()->GetChars(),entry);
+         storeCodeEntry(const_cast<char*>(methodName.c_str()),entry);
          methodStub->compiledMethod = (SOMppFunctionType *)entry;
        }
      }
