@@ -95,3 +95,18 @@ StdString VMObject::AsDebugString() const {
     }
     return "Object(" + GetClass()->GetName()->GetStdString() + ")";
 }
+
+VMObject& VMObject::AssignObject(const VMObject& rhs, const long numberOfIntrinsicFields)
+{
+    hash = rhs.hash;
+    objectSize = rhs.objectSize;
+    numberOfFields = rhs.numberOfFields;
+    clazz = rhs.clazz;
+
+    for(long i = numberOfIntrinsicFields; i < rhs.numberOfFields; ++i) 
+       FIELDS[i] = _store_ptr(rhs.GetField(i));
+
+    numberOfFields = rhs.numberOfFields;
+    
+    return *this;
+}

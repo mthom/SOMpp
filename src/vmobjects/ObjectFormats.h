@@ -87,6 +87,10 @@ class VMSymbol;
 // On the other hand, VMOops need to be untagged first to become useful.
 class GCOop;
 class VMOop {
+public:
+  virtual void visit(class SOMObjectVisitor&) {}
+
+private:
   virtual void dummyVirtualFunctionToForceVTableCreation() {
         /* With the current class hierarchy, we need to force the compiler to
            create a VTable early, otherwise, the object layout is having

@@ -284,9 +284,6 @@ BytecodeHelper::doInlineSendIfRequired(int64_t interp, int64_t framePtr, int64_t
 //	}
 
 	if (nullptr == invokable) {
-		VMSymbol *signature = (VMSymbol*)signaturePtr;
-		vm_oop_t receiver = (vm_oop_t)receiverPtr;
-		VMClass *clazz = CLASS_OF(receiver);
 		//fprintf(stderr, "doInlineSendIfRequired called with NULL invokable %s on clazz %s\n", signature->GetChars(), clazz->GetName()->GetChars());
 		/* TODO replace with a runtime assert */
 		int *x = 0;

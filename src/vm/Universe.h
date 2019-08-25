@@ -127,6 +127,7 @@ public:
     VMClass* NewSystemClass(void) const;
 
     void InitializeSystemClass(VMClass*, VMClass*, const char*);
+    VMObject* InitializeFromCache();
 
     vm_oop_t GetGlobal(VMSymbol*);
     void SetGlobal(VMSymbol* name, vm_oop_t val);
@@ -137,6 +138,7 @@ public:
 
     VMClass* LoadClass(VMSymbol*);
     void LoadSystemClass(VMClass*);
+    void LoadPrimitives(VMClass*);
     VMClass* LoadClassBasic(VMSymbol*, VMClass*);
     VMClass* LoadShellClass(StdString&);
 
@@ -152,6 +154,7 @@ public:
 #endif
     //
     
+    static bool IsValidObjectWithoutAssert(vm_oop_t obj);
     static bool IsValidObject(vm_oop_t obj);
     
     static void Print(StdString str);
@@ -159,7 +162,8 @@ public:
 
 private:
     set<VMMethod*> aotMethodQueue;
-
+    
+    void saveToSOMCache();
     vector<StdString> handleArguments(long argc, char** argv);    
     long getClassPathExt(vector<StdString>& tokens, const StdString& arg) const;
 

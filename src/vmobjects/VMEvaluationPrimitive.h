@@ -26,14 +26,19 @@
  THE SOFTWARE.
  */
 
+#include "../aot/SOMObjectVisitor.hpp"
 #include "AbstractObject.h"
 #include "VMPrimitive.h"
 
 class VMEvaluationPrimitive: public VMPrimitive {
+    friend class ObjectSerializer;
+    friend class ObjectDeserializer;
 public:
     typedef GCEvaluationPrimitive Stored;
 
+    VMEvaluationPrimitive(VMSymbol* signature, long argc);
     VMEvaluationPrimitive(long argc);
+
     virtual void WalkObjects(walk_heap_fn);
     virtual VMEvaluationPrimitive* Clone() const;
 
@@ -48,11 +53,17 @@ public:
       
       return fields;
     }
-
+    
+    virtual void visit(SOMObjectVisitor& visitor) {
+        visitor(this);
+    }
+    
 private:
     static VMSymbol* computeSignatureString(long argc);
     void evaluationRoutine(Interpreter*, VMFrame*);
-    gc_oop_t numberOfArguments;
+    gc_oop_t numberOfArguments;    
+
+    static constexpr long VMEvaluationPrimitiveNumberOfFields = 1;
 };
 
 class EvaluationRoutine : public PrimitiveRoutine {

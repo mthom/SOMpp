@@ -26,12 +26,15 @@
  THE SOFTWARE.
  */
 
+#include "../aot/SOMObjectVisitor.hpp"
 #include "AbstractObject.h"
 #include "IntegerBox.h"
 
 #include "../misc/defs.h"
 
 class VMInteger: public AbstractVMObject {
+    friend class ObjectSerializer;
+    friend class ObjectDeserializer;
 public:
     typedef GCInteger Stored;
     
@@ -48,6 +51,10 @@ public:
 
     std::vector<fomrobject_t*> GetFieldPtrs() {
         return {};
+    }
+
+    virtual void visit(SOMObjectVisitor& visitor) {
+        visitor(this);
     }
     
 private:

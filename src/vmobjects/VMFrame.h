@@ -27,10 +27,13 @@
  */
 
 #include "VMArray.h"
+#include "../aot/SOMObjectVisitor.hpp"
 
 class Universe;
 
 class VMFrame: public VMObject {
+    friend class ObjectSerializer;
+    friend class ObjectDeserializer;
     friend class Universe;
     friend class VMMethod;
     friend class EvaluationRoutine;
@@ -84,6 +87,10 @@ public:
 #endif
     virtual StdString AsDebugString() const;
     virtual std::vector<fomrobject_t*> GetFieldPtrs();
+
+    virtual void visit(SOMObjectVisitor& visitor) {
+        visitor(this);
+    }
     
  private:
     GCFrame* previousFrame;

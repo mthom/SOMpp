@@ -58,6 +58,23 @@ VMSymbol::VMSymbol(const StdString& s) :
     VMSymbol(s.c_str());
 }
 
+VMSymbol::VMSymbol(const char* str, int numberOfArgumentsOfSignature, uint64_t card)
+  : numberOfArgumentsOfSignature(numberOfArgumentsOfSignature)
+  , cachedClass_invokable{}
+  , nextCachePos(0)
+  , cachedInvokable{}
+  , card(card)
+{
+    nextCachePos = 0;
+    // set the chars-pointer to point at the position of the first character
+    chars = (char*) &cachedInvokable + +3 * sizeof(VMInvokable*);
+    size_t i = 0;
+    for (; i < strlen(str); ++i) {
+        chars[i] = str[i];
+    }
+    chars[i] = '\0';   
+}
+
 size_t VMSymbol::GetObjectSize() const {
     size_t size = sizeof(VMSymbol) + PADDED_SIZE(strlen(chars) + 1);
     return size;

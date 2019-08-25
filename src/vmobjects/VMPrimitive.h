@@ -26,11 +26,15 @@
  THE SOFTWARE.
  */
 
+#include "../aot/SOMObjectVisitor.hpp"
 #include "VMObject.h"
 #include "VMInvokable.h"
 #include "PrimitiveRoutine.h"
 
 class VMPrimitive: public VMInvokable {
+    friend class ObjectSerializer;
+    friend class ObjectDeserializer;
+    friend class SOMCompositeCache;
 public:
     typedef GCPrimitive Stored;
 
@@ -63,10 +67,14 @@ public:
       return fields;
     }
     
+    virtual void visit(SOMObjectVisitor& visitor) {
+        visitor(this);
+    }
+
 private:
     void EmptyRoutine(Interpreter*, VMFrame*);
 
-protected:    
+protected:
     // protected to be able to access the field in subclass,
     // for instance VMEvaluationPrimitive needs to GC the primitive object
     // hold in the special routine subclass
@@ -74,8 +82,7 @@ protected:
 private:
     bool empty;
 
-    static const int VMPrimitiveNumberOfFields;
-
+    static const long VMPrimitiveNumberOfFields;
 };
 
 bool VMPrimitive::IsEmpty() const {

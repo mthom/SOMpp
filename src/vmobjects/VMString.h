@@ -27,8 +27,12 @@
  */
 
 #include "AbstractObject.h"
+#include "../aot/SOMObjectVisitor.hpp"
 
 class VMString: public AbstractVMObject {
+    friend class ObjectSerializer;
+    friend class ObjectDeserializer;
+    friend class SOMCompositeCache;
 public:
     typedef GCString Stored;
     
@@ -49,7 +53,11 @@ public:
     virtual StdString AsDebugString() const;
 
     virtual std::vector<fomrobject_t*> GetFieldPtrs() {
-       return {};
+        return {};
+    }
+
+    virtual void visit(SOMObjectVisitor& visitor) {
+        visitor(this);
     }
 
 protected:    

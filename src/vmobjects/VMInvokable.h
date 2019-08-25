@@ -26,10 +26,13 @@
  THE SOFTWARE.
  */
 
+#include "../aot/SOMObjectVisitor.hpp"
 #include "ObjectFormats.h"
 #include "VMObject.h"
 
 class VMInvokable: public VMObject {
+    friend class ObjectSerializer;
+    friend class ObjectDeserializer;
 public:
     typedef GCInvokable Stored;
 
@@ -42,8 +45,11 @@ public:
       return fields;
     }
 
- public:
     VMInvokable(long nof = 0);
+
+    virtual void visit(SOMObjectVisitor& visitor) {
+        visitor(this);
+    }
             
     virtual void      Invoke(Interpreter*, VMFrame*) = 0;
 
@@ -60,4 +66,6 @@ public:
 protected:
     GCSymbol* signature;
     GCClass*  holder;
+
+    static constexpr long VMInvokableNumberOfFields = 2;
 };
