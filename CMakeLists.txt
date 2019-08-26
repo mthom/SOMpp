@@ -5,7 +5,7 @@ project (SOMPP)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -no-pie") # -fsanitize=thread")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}") # -fsanitize=thread")
 
 find_program(CCACHE_FOUND ccache)
 if(CCACHE_FOUND)

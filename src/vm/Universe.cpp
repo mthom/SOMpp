@@ -341,11 +341,20 @@ void Universe::compileAOTMethods() {
 
      SOMppMethod methodBuilder(&types, methodStub, false);
      void *entry = nullptr;
+     
+     std::string methodName(methodStub->GetHolder()->GetName()->GetChars());
+     methodName = methodName + ">>#" + methodStub->GetSignature()->GetChars();
 
-     rc = (*compileMethodBuilder)(&methodBuilder, &entry);
+     if ((entry = getCodeEntry(const_cast<char*>(methodName.c_str())))) {
+        methodStub->compiledMethod = (SOMppFunctionType *) entry;
+        relocateCodeEntry(const_cast<char*>(methodName.c_str()), entry);
+     } else {
+       rc = (*compileMethodBuilder)(&methodBuilder, &entry);
 
-     if (0 == rc) {
-         methodStub->compiledMethod = (SOMppFunctionType *)entry;
+       if (0 == rc) {
+         storeCodeEntry(const_cast<char*>(methodName.c_str()), entry);
+         methodStub->compiledMethod = (SOMppFunctionType *) entry;
+       }
      }
    }
 }
@@ -548,8 +557,10 @@ void Universe::initialize(long _argc, char** _argv) {
     }
 #endif
 
-    // still need the JIT running for AOT support.
-    if (!enableJIT && !initializeJit()) {
+    if (!enableJIT && !initializeJitWithOptions("-Xjit:acceptHugeMethods,enableBasicBlockHoisting,"
+			      "omitFramePointer,useILValidator,enableRelocatableELFGeneration,"
+			      "traceIlGen,traceFull,log=trtrace.log,"
+			      "objectFile=tempmod.o")) {
       Universe::ErrorPrint("Could not initialize JIT\n");
       GetUniverse()->Quit(-1);
     }
@@ -846,11 +857,8 @@ VMObject* Universe::InitializeGlobals() {
     symbolIfTrue  = _store_ptr(SymbolForChars("ifTrue:"));
     symbolIfFalse = _store_ptr(SymbolForChars("ifFalse:"));
 
-    //    if (enableJIT) {
-    saveToSOMCache(); // this is where the prelude is written to the
-		      // SOM cache. this is where the carnage begins.
-    // compileAOTMethods();
-       //    }
+    saveToSOMCache();
+    compileAOTMethods();
 
     return systemObject;
 }
@@ -951,7 +959,7 @@ VMObject* Universe::InitializeFromCache()
     enqueueAOTMethods(load_ptr(blockClass));
     enqueueAOTMethods(load_ptr(doubleClass));
     enqueueAOTMethods(load_ptr(systemClass));
-
+    /*
     // ackshually, this should be a separate region! If you want to be assured
     // of where the additional metadata is, I mean.
     while(true) {
@@ -972,7 +980,7 @@ VMObject* Universe::InitializeFromCache()
 	   break;
        }
     }
-   
+    */   
     compileAOTMethods();
 
     return systemObject;
