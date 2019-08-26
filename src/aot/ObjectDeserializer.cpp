@@ -61,6 +61,8 @@ gc_oop_t ObjectDeserializer::operator()(MetadataIterator& it)
    case ItemHeader::symbol:
      return createSymbol(it);
    }
+
+   return nullptr;
 }
 
 gc_oop_t ObjectDeserializer::isSeenObject(const ItemHeader& header)

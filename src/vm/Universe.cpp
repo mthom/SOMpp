@@ -951,7 +951,28 @@ VMObject* Universe::InitializeFromCache()
     enqueueAOTMethods(load_ptr(blockClass));
     enqueueAOTMethods(load_ptr(doubleClass));
     enqueueAOTMethods(load_ptr(systemClass));
-    
+
+    // ackshually, this should be a separate region! If you want to be assured
+    // of where the additional metadata is, I mean.
+    while(true) {
+       SOMCacheMetadataEntryDescriptor descriptor = it.next();       
+
+       if(descriptor) {
+	   auto object = reinterpret_cast<vm_oop_t>(deserialize(it));
+
+	   if (object == nullptr)
+	      break;
+
+	   if (auto clazz = dynamic_cast<VMClass*>(object)) {
+	      SetGlobal(clazz->GetName(), clazz);
+	      LoadPrimitives(clazz);
+	      enqueueAOTMethods(clazz);
+	   }
+       } else {
+	   break;
+       }
+    }
+   
     compileAOTMethods();
 
     return systemObject;
