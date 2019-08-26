@@ -170,6 +170,15 @@ printInt64Hex(int64_t value)
 	fprintf(stderr, "%lx", value);
 }
 
+uint64_t SOMppMethod::assumptionID = 0;
+
+void
+SOMppMethod::setMinimalAssumptionID(uint64_t min)
+{
+        if (assumptionID < min)
+	   assumptionID = min;
+}
+
 OMR::JitBuilder::IlValue *
 SOMppMethod::add(OMR::JitBuilder::BytecodeBuilder *builder, OMR::JitBuilder::IlValue *param1, OMR::JitBuilder::IlValue *param2)
 {
@@ -873,7 +882,7 @@ SOMppMethod::doSend(OMR::JitBuilder::BytecodeBuilder *lookup, OMR::JitBuilder::B
 
 	lookup->IfCmpEqual(&fastPath,
         lookup->	   Load("card"),
-	lookup->           ConstInt64(signature->GetCard())); //TODO: relocate card!
+	lookup->           VMConstInt64(signature->GetCard())); //TODO: relocate card!
 
 	COMMIT(fastPath);
 

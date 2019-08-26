@@ -109,6 +109,7 @@ public:
 	virtual bool buildIL();
         void defineFunction(const char*);
         virtual bool RequestFunction(const char* name);
+        static void setMinimalAssumptionID(uint64_t min);
   
 protected:
         std::set<std::string> _functionsAdded;
@@ -154,6 +155,7 @@ private:
 	/* Should inlining be attempted */
 	bool doInlining;
 	bool doLoopInlining;
+        static uint64_t assumptionID;
 	/* Provide a name for the method */
 	char methodName[64];
 

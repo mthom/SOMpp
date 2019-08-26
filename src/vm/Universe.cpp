@@ -336,6 +336,8 @@ void Universe::compileAOTMethods() {
 
    uint32_t rc = 0;
    
+   setCodeEntry("callFunction",reinterpret_cast<void*>(VMSymbol::setMinimalCardValue));
+   setCodeEntry("setAssumptionID",reinterpret_cast<void*>(SOMppMethod::setMinimalAssumptionID));
    for (auto& methodStub : aotMethodQueue) {
      OMR::JitBuilder::TypeDictionary types;
 

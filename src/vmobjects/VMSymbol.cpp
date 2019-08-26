@@ -35,9 +35,11 @@
 
 extern GCClass* symbolClass;
 
+uint64_t VMSymbol::lastUnusedCard = 0;
+
 VMSymbol::VMSymbol(const char* str) :
   numberOfArgumentsOfSignature(Signature::DetermineNumberOfArguments(str)),
-  card(NewCard())
+  card(lastUnusedCard++)
 {
     nextCachePos = 0;
     // set the chars-pointer to point at the position of the first character
@@ -53,7 +55,7 @@ VMSymbol::VMSymbol(const char* str) :
 
 VMSymbol::VMSymbol(const StdString& s) :
   numberOfArgumentsOfSignature(Signature::DetermineNumberOfArguments(s.c_str())),
-  card(NewCard())
+  card(lastUnusedCard++)
 {
     VMSymbol(s.c_str());
 }
