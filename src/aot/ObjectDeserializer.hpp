@@ -14,7 +14,9 @@ using ItemHeader = SOMCacheMetadataItemHeader;
 
 class ObjectDeserializer {
 public:
-    gc_oop_t operator()(MetadataIterator&);  
+    gc_oop_t operator()(MetadataIterator&);
+
+    uint64_t getMaxCard() { return card; }
 
 private:
     gc_oop_t isSeenObject(const ItemHeader&);
@@ -34,4 +36,5 @@ private:
 
 private:
     std::map<ItemHeader, AbstractVMObject*> oldNewAddresses;
+    uint64_t card = 0;
 };

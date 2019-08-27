@@ -400,5 +400,7 @@ GCSymbol* ObjectDeserializer::createSymbol(MetadataIterator& it)
    read(&s->card, *it);
    it += sizeof(s->card);
 
+   card = std::max(card, s->card);
+
    return _store_ptr(s);
 }

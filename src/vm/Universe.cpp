@@ -335,20 +335,19 @@ VMMethod* Universe::createBootstrapMethod(VMClass* holder, long numArgsOfMsgSend
 #if GC_TYPE == OMR_GARBAGE_COLLECTION
 void Universe::compileAOTMethods() {
    uint32_t rc = 0;
+   void *entry = nullptr;
 
    for (auto& methodStub : aotMethodQueue) {
-     OMR::JitBuilder::TypeDictionary types;
-
-     SOMppMethod methodBuilder(&types, methodStub, false);
-     void *entry = nullptr;
-     
      std::string methodName(methodStub->GetHolder()->GetName()->GetChars());
      methodName = methodName + ">>#" + methodStub->GetSignature()->GetChars();
 
      if ((entry = getCodeEntry(const_cast<char*>(methodName.c_str())))) {
-        methodStub->compiledMethod = (SOMppFunctionType *) entry;
-        relocateCodeEntry(const_cast<char*>(methodName.c_str()), entry);
+       methodStub->compiledMethod = (SOMppFunctionType *) entry;
+       relocateCodeEntry(const_cast<char*>(methodName.c_str()), entry);
      } else {
+       OMR::JitBuilder::TypeDictionary types;
+
+       SOMppMethod methodBuilder(&types, methodStub, false);
        rc = (*compileMethodBuilder)(&methodBuilder, &entry);
 
        if (0 == rc) {
@@ -857,6 +856,22 @@ VMObject* Universe::InitializeGlobals() {
     symbolIfTrue  = _store_ptr(SymbolForChars("ifTrue:"));
     symbolIfFalse = _store_ptr(SymbolForChars("ifFalse:"));
 
+    enqueueAOTMethods(load_ptr(objectClass));
+    enqueueAOTMethods(load_ptr(classClass));
+    enqueueAOTMethods(load_ptr(metaClassClass));
+    enqueueAOTMethods(load_ptr(nilClass));
+    enqueueAOTMethods(load_ptr(arrayClass));
+    enqueueAOTMethods(load_ptr(methodClass));
+    enqueueAOTMethods(load_ptr(symbolClass));
+    enqueueAOTMethods(load_ptr(integerClass));
+    enqueueAOTMethods(load_ptr(primitiveClass));
+    enqueueAOTMethods(load_ptr(stringClass));
+    enqueueAOTMethods(load_ptr(doubleClass));
+    enqueueAOTMethods(load_ptr(systemClass));
+    enqueueAOTMethods(load_ptr(blockClass));
+    enqueueAOTMethods(load_ptr(trueClass));
+    enqueueAOTMethods(load_ptr(falseClass));
+
     saveToSOMCache();
     compileAOTMethods();
 
@@ -959,11 +974,12 @@ VMObject* Universe::InitializeFromCache()
     enqueueAOTMethods(load_ptr(blockClass));
     enqueueAOTMethods(load_ptr(doubleClass));
     enqueueAOTMethods(load_ptr(systemClass));
+    
     /*
     // ackshually, this should be a separate region! If you want to be assured
     // of where the additional metadata is, I mean.
     while(true) {
-       SOMCacheMetadataEntryDescriptor descriptor = it.next();       
+       SOMCacheMetadataEntryDescriptor descriptor = it.next();
 
        if(descriptor) {
 	   auto object = reinterpret_cast<vm_oop_t>(deserialize(it));
@@ -980,7 +996,8 @@ VMObject* Universe::InitializeFromCache()
 	   break;
        }
     }
-    */   
+    */
+    
     compileAOTMethods();
 
     return systemObject;
@@ -1128,8 +1145,6 @@ void Universe::LoadSystemClass(VMClass* systemClass) {
 
     if (result->HasPrimitives() || result->GetClass()->HasPrimitives())
        result->LoadPrimitives(classPath);
-
-    enqueueAOTMethods(systemClass);
 }
 
 VMArray* Universe::NewArray(long size) const {

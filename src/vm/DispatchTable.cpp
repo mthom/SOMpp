@@ -1,8 +1,19 @@
 #include "DispatchTable.h"
 
+CardManager CardManager::instance {};
+
 uint64_t NewCard() {
    static uint64_t NEW_CARD = 0;
    return NEW_CARD++;
+   //return CardManager::instance.NewCard();
+}
+
+void SetCard(uint64_t card) {
+   CardManager::instance.SetCard(card);
+}
+
+uint64_t CardManager::NewCard() {
+   return card++;
 }
 
 template <std::size_t N>
