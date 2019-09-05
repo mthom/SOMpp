@@ -155,11 +155,14 @@ long VMMethod::GetNumberOfBytecodes() const {
 }
 
 void VMMethod::Invoke(Interpreter* interp, VMFrame* frame) {
+    static int allowedInvocations = 0;   
     VMFrame* frm = interp->PushNewFrame(this);
     frm->CopyArgumentsFrom(frame);
+
 #if GC_TYPE == OMR_GARBAGE_COLLECTION
-	if(NULL != compiledMethod) {
+	if(allowedInvocations < 3 && NULL != compiledMethod) {
 	  frm->SetIsJITFrame(true);
+	  allowedInvocations++;
 	  compiledMethod((int64_t*)interp, frm);
 	} else if (invokedCount > 0) {
 		if (0 == --invokedCount) {

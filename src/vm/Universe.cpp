@@ -63,9 +63,8 @@
 #include "../../omrglue/CollectorLanguageInterfaceImpl.hpp"
 #include "../../src/jit/SOMppMethod_with_vm_state.hpp"
 #include "../../omr/include_core/omrvm.h"
-#include "../../omr/compiler/env/CompilerEnv.hpp"
-#include "../../omr/compiler/env/SharedCache.hpp"
 #include "../../omr/include_core/omrlinkedlist.h"
+#include "../../omr/compiler/env/CompilerEnv.hpp"
 #include "../../omrglue/MarkingDelegate.hpp"
 #endif
 
@@ -557,14 +556,20 @@ void Universe::initialize(long _argc, char** _argv) {
 #endif
 
     if (!enableJIT && !initializeJitWithOptions("-Xjit:acceptHugeMethods,enableBasicBlockHoisting,"
-			      "omitFramePointer,useILValidator,enableRelocatableELFGeneration,"
-			      "traceIlGen,traceFull,log=trtrace.log,"
-			      "objectFile=tempmod.o")) {
+						"omitFramePointer,useILValidator,enableRelocatableELFGeneration,"
+						"traceIlGen,traceFull,log=trtrace.log,paranoidOptCheck,"
+						"{*do:*}(log=methodDo.log,traceFull)"))
+    {
       Universe::ErrorPrint("Could not initialize JIT\n");
       GetUniverse()->Quit(-1);
     }
 
-    TR::SharedCache* sharedCache = TR::Compiler->aotAdapter.getSharedCache();
+    std::cout << "size of TR::Compiler outside OMR: " << sizeof(*TR::Compiler) << "\n";
+    std::cout << "value of TR::Compiler: " << TR::Compiler << "\n";
+    std::cout << "value of &TR::Compiler->aotAdapter: " << &TR::Compiler->aotAdapter << "\n";
+    std::cout << "value of TR::Compiler->_sharedCache: " << TR::Compiler->aotAdapter.getSharedCache() << "\n";
+
+    TR::SharedCache* sharedCache = TR::Compiler->aotAdapter.getSharedCache();      
 
     VMObject* systemObject = sharedCache->createdNewCache() ? InitializeGlobals() : InitializeFromCache();
     VMMethod* bootstrapMethod = createBootstrapMethod(load_ptr(systemClass), 2);
@@ -904,6 +909,7 @@ VMObject* Universe::InitializeFromCache()
     symbolClass     = (GCClass*) deserialize(it);
     primitiveClass  = (GCClass*) deserialize(it);
     stringClass     = (GCClass*) deserialize(it);
+    
     systemClass     = (GCClass*) deserialize(it);
     blockClass      = (GCClass*) deserialize(it);
     doubleClass     = (GCClass*) deserialize(it);
@@ -971,8 +977,8 @@ VMObject* Universe::InitializeFromCache()
     enqueueAOTMethods(load_ptr(integerClass));
     enqueueAOTMethods(load_ptr(primitiveClass));
     enqueueAOTMethods(load_ptr(stringClass));
-    enqueueAOTMethods(load_ptr(blockClass));
     enqueueAOTMethods(load_ptr(doubleClass));
+    enqueueAOTMethods(load_ptr(blockClass));
     enqueueAOTMethods(load_ptr(systemClass));
     
     /*
@@ -1460,7 +1466,9 @@ VMClass* Universe::NewSystemClass() const {
 
 void Universe::enqueueAOTMethods(VMClass* clazz) {
    for(long i = 0; i < clazz->GetNumberOfInstanceInvokables(); ++i) {
-     if (auto method = dynamic_cast<VMMethod*>(clazz->GetInstanceInvokable(i))) {
+     auto* invokable = clazz->GetInstanceInvokable(i);
+     
+     if (auto* method = dynamic_cast<VMMethod*>(invokable)) {
         if (aotMethodQueue.find(method) == aotMethodQueue.end()) {
 	   aotMethodQueue.insert(method);
 	}

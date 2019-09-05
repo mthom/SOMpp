@@ -5,7 +5,9 @@ project (SOMPP)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}") # -fsanitize=thread")
+# allow locally extensible CXXFLAGS. We use this to limit the
+# OMRChecker flags to source files in the directory omr/compiler/env.
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O0")
 
 set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE ccache)
 set_property(GLOBAL PROPERTY RULE_LAUNCH_LINK ccache)
@@ -70,8 +72,7 @@ set(VM_SRC "${VM_INCLUDE}/DispatchTable.cpp"
 
 set(JIT_INCLUDE "${CMAKE_CURRENT_SOURCE_DIR}/src/jit")
 
-set(JIT_SRC # "${JIT_INCLUDE}/SOMppMethod.cpp"
-            "${JIT_INCLUDE}/SOMppMethod_with_vm_state.cpp")
+set(JIT_SRC "${JIT_INCLUDE}/SOMppMethod_with_vm_state.cpp")
 
 set(AOT_INCLUDE "${CMAKE_CURRENT_SOURCE_DIR}/src/aot")
 
@@ -170,8 +171,7 @@ target_include_directories(omr_som_gc_glue INTERFACE
 add_definitions(-DDEFAULT_OMR_JIT_ON=false -DGC_TYPE=OMR_GARBAGE_COLLECTION) # -DUSE_TAGGING=false -DCACHE_INTEGER=false)
 #  was OMR_GARBAGE_COLLECTION
 
-add_executable(som
-               "src/Main.cpp")
+add_executable(som "src/Main.cpp")
 
 target_include_directories(som PRIVATE ${VM_INCLUDE}
                                        ${VM_OBJECTS_INCLUDE}
