@@ -80,10 +80,13 @@ void _System::HasGlobal_(Interpreter*, VMFrame* frame) {
 void _System::Load_(Interpreter*, VMFrame* frame) {
     VMSymbol* arg = static_cast<VMSymbol*>(frame->Pop());
     frame->Pop();
+    //TODO: lookup and deserialize the class from the cache here,
+    //if U dare.
     VMClass* result = GetUniverse()->LoadClass(arg);
-    if (result)
+    if (result) {
         frame->Push(result);
-    else
+	//TODO: serialize the cache here.
+    } else
         frame->Push(load_ptr(nilObject));
 }
 

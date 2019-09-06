@@ -61,7 +61,7 @@
 #include "JitBuilder.hpp"
 #include "ilgen/TypeDictionary.hpp"
 #include "../../omrglue/CollectorLanguageInterfaceImpl.hpp"
-#include "../../src/jit/SOMppMethod_with_vm_state.hpp"
+#include "../../src/jit/SOMppMethod.hpp"
 #include "../../omr/include_core/omrvm.h"
 #include "../../omr/compiler/env/CompilerEnv.hpp"
 #include "../../omr/compiler/env/SharedCache.hpp"
@@ -873,7 +873,7 @@ VMObject* Universe::InitializeGlobals() {
     enqueueAOTMethods(load_ptr(falseClass));
 
     saveToSOMCache();
-    compileAOTMethods();
+    // compileAOTMethods();
 
     return systemObject;
 }
@@ -960,7 +960,7 @@ VMObject* Universe::InitializeFromCache()
     SetGlobal(SymbolForChars("system"), systemObject);
     SetGlobal(SymbolForChars("System"), load_ptr(systemClass));
     SetGlobal(SymbolForChars("Block"),  load_ptr(blockClass));
-
+    /*
     enqueueAOTMethods(load_ptr(objectClass));
     enqueueAOTMethods(load_ptr(classClass));
     enqueueAOTMethods(load_ptr(metaClassClass));
@@ -974,7 +974,7 @@ VMObject* Universe::InitializeFromCache()
     enqueueAOTMethods(load_ptr(blockClass));
     enqueueAOTMethods(load_ptr(doubleClass));
     enqueueAOTMethods(load_ptr(systemClass));
-    
+    */
     /*
     // ackshually, this should be a separate region! If you want to be assured
     // of where the additional metadata is, I mean.
@@ -998,7 +998,7 @@ VMObject* Universe::InitializeFromCache()
     }
     */
     
-    compileAOTMethods();
+    //compileAOTMethods();
 
     return systemObject;
 }
