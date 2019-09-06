@@ -184,7 +184,7 @@ GCBlock* ObjectDeserializer::createBlock(MetadataIterator& it)
       return static_cast<GCBlock*>(obj);
    }
 
-   auto obj = dynamic_cast<VMObject*>(load_ptr((*this)(it)));
+   auto obj = reinterpret_cast<VMObject*>(load_ptr((*this)(it)));
 
    long additionalBytes = header.size - sizeof(VMBlock);
    VMBlock* block = new (GetHeap<HEAP_CLS>(), additionalBytes) VMBlock();
