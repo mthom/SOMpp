@@ -564,11 +564,6 @@ void Universe::initialize(long _argc, char** _argv) {
       GetUniverse()->Quit(-1);
     }
 
-    std::cout << "size of TR::Compiler outside OMR: " << sizeof(*TR::Compiler) << "\n";
-    std::cout << "value of TR::Compiler: " << TR::Compiler << "\n";
-    std::cout << "value of &TR::Compiler->aotAdapter: " << &TR::Compiler->aotAdapter << "\n";
-    std::cout << "value of TR::Compiler->_sharedCache: " << TR::Compiler->aotAdapter.getSharedCache() << "\n";
-
     TR::SharedCache* sharedCache = TR::Compiler->aotAdapter.getSharedCache();      
 
     VMObject* systemObject = sharedCache->createdNewCache() ? InitializeGlobals() : InitializeFromCache();
@@ -889,7 +884,7 @@ VMObject* Universe::InitializeFromCache()
     set_vt_to_null();
 
     auto* cache = TR::Compiler->aotAdapter.getSharedCache();
-    auto it = cache->constructMetadataSectionEntryIterator();
+    auto it = cache->constructPreludeSectionEntryIterator();
 
     ObjectDeserializer deserialize;
 
