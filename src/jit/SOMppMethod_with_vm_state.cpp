@@ -176,9 +176,11 @@ void
 SOMppMethod::setMinimalAssumptionID(uint64_t min)
 {
         if (assumptionID < min)
-	   assumptionID = min;
+           assumptionID = min;
 }
 
+
+>>>>>>> Stashed changes
 OMR::JitBuilder::IlValue *
 SOMppMethod::add(OMR::JitBuilder::BytecodeBuilder *builder, OMR::JitBuilder::IlValue *param1, OMR::JitBuilder::IlValue *param2)
 {
@@ -840,7 +842,7 @@ void
 SOMppMethod::doSend(OMR::JitBuilder::BytecodeBuilder *lookup, OMR::JitBuilder::BytecodeBuilder **bytecodeBuilderTable,
 		    long bytecodeIndex, OMR::JitBuilder::BytecodeBuilder *fallThrough)
 {
-        static uint64_t assumptionID = 0;
+//      static uint64_t assumptionID = 0;
 	VMSymbol* signature = static_cast<VMSymbol*>(method->GetConstant(bytecodeIndex));
 	int numOfArgs = Signature::GetNumberOfArguments(signature);
 

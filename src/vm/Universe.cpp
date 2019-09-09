@@ -336,6 +336,10 @@ VMMethod* Universe::createBootstrapMethod(VMClass* holder, long numArgsOfMsgSend
 void Universe::compileAOTMethods() {
    uint32_t rc = 0;
    void *entry = nullptr;
+   TR::SharedCache* sharedCache = TR::Compiler->aotAdapter.getSharedCache();
+
+   SOMppMethod::setMinimalAssumptionID(sharedCache->assumptionID());
+   VMSymbol::setMinimalCardValue(sharedCache->card());
 
    for (auto& methodStub : aotMethodQueue) {
      std::string methodName(methodStub->GetHolder()->GetName()->GetChars());
@@ -356,6 +360,9 @@ void Universe::compileAOTMethods() {
        }
      }
    }
+
+   sharedCache->storeAssumptionID(SOMppMethod::getAssumptionID());
+   sharedCache->storeCard(VMSymbol::getCardValue());
 }
 
 int Universe::jitCompilationEntryPoint(void *arg) {
@@ -766,6 +773,7 @@ void Universe::saveToSOMCache()
    load_ptr(symbolIfFalse)->visit(serializer);
 
    writer.flushToCache();
+   
 }
 
 VMObject* Universe::InitializeGlobals() {
@@ -873,6 +881,7 @@ VMObject* Universe::InitializeGlobals() {
     enqueueAOTMethods(load_ptr(falseClass));
 
     saveToSOMCache();
+    
     compileAOTMethods();
 
     return systemObject;

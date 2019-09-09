@@ -110,6 +110,7 @@ public:
         void defineFunction(const char*);
         virtual bool RequestFunction(const char* name);
         static void setMinimalAssumptionID(uint64_t min);
+        static uint64_t getAssumptionID() {return assumptionID;}
   
 protected:
         std::set<std::string> _functionsAdded;
@@ -152,6 +153,7 @@ private:
 	VMMethod *inlinedMethods[MAX_RECURSIVE_INLINING_DEPTH + 1];
 	long inlinedBytecodeIndecies[MAX_RECURSIVE_INLINING_DEPTH + 1];
 	int32_t extraStackDepthRequired;
+        static uint64_t assumptionID;
 	/* Should inlining be attempted */
 	bool doInlining;
 	bool doLoopInlining;
