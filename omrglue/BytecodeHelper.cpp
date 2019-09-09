@@ -81,7 +81,7 @@ BytecodeHelper::getSuperClass(int64_t object)
 }
 
 void
-BytecodeHelper::getGlobal(int64_t interp, int64_t framePtr, int64_t receiverPtr, int64_t globalNamePtr)
+BytecodeHelper::getGlobal(int64_t interp, int64_t framePtr, int64_t receiverPtr, int64_t* globalNamePtr)
 {
 #define VALUE_FOR_GET_GLOBAL_LINE LINETOSTR(__LINE__)
 	//fprintf(stderr, "get global type %p\n", symbol);
@@ -121,7 +121,7 @@ BytecodeHelper::getGlobal(int64_t interp, int64_t framePtr, int64_t receiverPtr,
 }
 
 int64_t
-BytecodeHelper::getNewBlock(VMFrame* frame, int64_t blockMethod, int64_t numOfArgs)
+BytecodeHelper::getNewBlock(VMFrame* frame, int64_t* blockMethod, int64_t numOfArgs)
 {
 #define VALUE_FOR_GET_NEW_BLOCK_LINE LINETOSTR(__LINE__)
 
@@ -182,7 +182,7 @@ BytecodeHelper::getInvokable(int64_t receiverClazz, int64_t* signature)
 }
 
 int64_t
-BytecodeHelper::doSendIfRequired(int64_t* interp, VMFrame* frame, int64_t invokablePtr, int64_t* receiverPtr, int64_t signaturePtr, int64_t bytecodeIndex)
+BytecodeHelper::doSendIfRequired(int64_t* interp, VMFrame* frame, int64_t invokablePtr, int64_t* receiverPtr, int64_t* signaturePtr, int64_t bytecodeIndex)
 {
 #define VALUE_FOR_DO_SEND_IF_REQUIRED_LINE LINETOSTR(__LINE__)
 	//fprintf(stderr, "doSendIf REquired\n");
@@ -352,7 +352,7 @@ BytecodeHelper::allocateVMFrame(int64_t interp, int64_t previousFramePtr, int64_
 }
 
 int64_t
-BytecodeHelper::doSuperSendHelper(int64_t* interp, VMFrame* frame, int64_t signaturePtr, int64_t bytecodeIndex)
+BytecodeHelper::doSuperSendHelper(int64_t* interp, VMFrame* frame, int64_t* signaturePtr, int64_t bytecodeIndex)
 {
 #define VALUE_FOR_DO_SUPER_SEND_HELPER_LINE LINETOSTR(__LINE__)
 	//fprintf(stderr, "doSuperSend\n");

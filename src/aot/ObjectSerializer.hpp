@@ -30,6 +30,21 @@ public:
         : bufferWriter(bufferWriter)
     {}
   
+    void operator()(VMClass*) override;
+    void operator()(VMObject*, long numberOfNonIntrinsicFields = 0) override;
+    void operator()(VMArray*) override;
+    void operator()(VMBlock*) override;
+    void operator()(VMDouble*) override;
+    void operator()(VMInteger*) override;
+    void operator()(VMInvokable*) override;
+    void operator()(VMPrimitive*) override;
+    void operator()(VMEvaluationPrimitive*) override;
+    void operator()(VMFrame*) override;
+    void operator()(VMMethod*) override;
+    void operator()(VMString*) override;
+    void operator()(VMSymbol*) override;
+
+private:
     void serializeAndWrite(vm_oop_t obj);
 
     inline bool checkForSeenAddress(ItemHeader::ItemDesc desc, gc_oop_t obj) {
@@ -49,21 +64,6 @@ public:
 	return false;
     }
 
-    void operator()(VMClass*);
-    void operator()(VMObject*, long numberOfNonIntrinsicFields = 0);
-    void operator()(VMArray*);
-    void operator()(VMBlock*);
-    void operator()(VMDouble*);
-    void operator()(VMInteger*);
-    void operator()(VMInvokable*);
-    void operator()(VMPrimitive*);
-    void operator()(VMEvaluationPrimitive*);
-    void operator()(VMFrame*);
-    void operator()(VMMethod*);
-    void operator()(VMString*);
-    void operator()(VMSymbol*);
-
-private:
     BufferWriter *bufferWriter;
     std::set<ItemHeader> seenAddresses;
 };

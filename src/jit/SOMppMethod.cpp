@@ -345,18 +345,18 @@ SOMppMethod::defineFunctions()
 	DefineFunction((char *)"printInt64Hex", (char *)__FILE__, (char *)PRINTINT64HEX_LINE, (void *) &printInt64Hex, NoType, 1, Int64);
 	DefineFunction((char *)"getClass", (char *)BytecodeHelper::BYTECODEHELPER_FILE, (char *)BytecodeHelper::GET_CLASS_LINE, (void *)&BytecodeHelper::getClass, Int64, 1, pInt64);
 	DefineFunction((char *)"getSuperClass", (char *)BytecodeHelper::BYTECODEHELPER_FILE, (char *)BytecodeHelper::GET_SUPER_CLASS_LINE, (void *)&BytecodeHelper::getSuperClass, Int64, 1, Int64);
-	DefineFunction((char *)"getGlobal", (char *)BytecodeHelper::BYTECODEHELPER_FILE, (char *)BytecodeHelper::GET_GLOBAL_LINE, (void *)&BytecodeHelper::getGlobal, NoType, 4, Int64, Int64, Int64, Int64);
-	DefineFunction((char *)"getNewBlock", (char *)BytecodeHelper::BYTECODEHELPER_FILE, (char *)BytecodeHelper::GET_NEW_BLOCK_LINE, (void *)&BytecodeHelper::getNewBlock, pVMFrame, 3, pVMFrame, Int64, Int64);
+	DefineFunction((char *)"getGlobal", (char *)BytecodeHelper::BYTECODEHELPER_FILE, (char *)BytecodeHelper::GET_GLOBAL_LINE, (void *)&BytecodeHelper::getGlobal, NoType, 4, Int64, Int64, Int64, pInt64);
+	DefineFunction((char *)"getNewBlock", (char *)BytecodeHelper::BYTECODEHELPER_FILE, (char *)BytecodeHelper::GET_NEW_BLOCK_LINE, (void *)&BytecodeHelper::getNewBlock, pVMFrame, 3, pVMFrame, pInt64, Int64);
 	DefineFunction((char *)"newInteger", (char *)BytecodeHelper::BYTECODEHELPER_FILE, (char *)BytecodeHelper::NEW_INTEGER_LINE, (void *)&BytecodeHelper::newInteger, Int64, 1, Int64);
 	DefineFunction((char *)"newDouble", (char *)BytecodeHelper::BYTECODEHELPER_FILE, (char *)BytecodeHelper::NEW_DOUBLE_LINE, (void *)&BytecodeHelper::newDouble, Int64, 1, Double);
 	DefineFunction((char *)"newArray", (char *)BytecodeHelper::BYTECODEHELPER_FILE, (char *)BytecodeHelper::NEW_ARRAY_LINE, (void *)&BytecodeHelper::newArray, Int64, 1, Int64);
 	DefineFunction((char *)"getFieldFrom", (char *)BytecodeHelper::BYTECODEHELPER_FILE, (char *)BytecodeHelper::GET_FIELD_FROM_LINE, (void *)&BytecodeHelper::getFieldFrom, pInt64, 2, pVMObject, Int64);
 	DefineFunction((char *)"setFieldTo", (char *)BytecodeHelper::BYTECODEHELPER_FILE, (char *)BytecodeHelper::SET_FIELD_TO_LINE, (void *)&BytecodeHelper::setFieldTo, NoType, 3, Int64, Int64, pInt64);
 	DefineFunction((char *)"getInvokable", (char *)BytecodeHelper::BYTECODEHELPER_FILE, (char *)BytecodeHelper::GET_INVOKABLE_LINE, (void *)&BytecodeHelper::getInvokable, Int64, 2, Int64, pInt64);
-	DefineFunction((char *)"doSendIfRequired", (char *)BytecodeHelper::BYTECODEHELPER_FILE, (char *)BytecodeHelper::DO_SEND_IF_REQUIRED_LINE, (void *)&BytecodeHelper::doSendIfRequired, Int64, 6, pInt64, pVMFrame, Int64, Int64, Int64, Int64);
+	DefineFunction((char *)"doSendIfRequired", (char *)BytecodeHelper::BYTECODEHELPER_FILE, (char *)BytecodeHelper::DO_SEND_IF_REQUIRED_LINE, (void *)&BytecodeHelper::doSendIfRequired, Int64, 6, pInt64, pVMFrame, Int64, Int64, pInt64, Int64);
 	DefineFunction((char *)"allocateVMFrame", (char *)BytecodeHelper::BYTECODEHELPER_FILE, (char *)BytecodeHelper::ALLOCATE_VMFRAME_LINE, (void *)&BytecodeHelper::allocateVMFrame, Int64, 8, Int64, Int64, Int64, Int64, Int64, ppInt64, Int64, Int64);
 	DefineFunction((char *)"doInlineSendIfRequired", (char *)BytecodeHelper::BYTECODEHELPER_FILE, (char *)BytecodeHelper::DO_INLINE_SEND_IF_REQUIRED_LINE, (void *)&BytecodeHelper::doInlineSendIfRequired, Int64, 6, Int64, Int64, Int64, Int64, Int64, Int64);
-	DefineFunction((char *)"doSuperSendHelper", (char *)BytecodeHelper::BYTECODEHELPER_FILE, (char *)BytecodeHelper::DO_SUPER_SEND_HELPER_LINE, (void *)&BytecodeHelper::doSuperSendHelper, Int64, 4, pInt64, pVMFrame, Int64, Int64);
+	DefineFunction((char *)"doSuperSendHelper", (char *)BytecodeHelper::BYTECODEHELPER_FILE, (char *)BytecodeHelper::DO_SUPER_SEND_HELPER_LINE, (void *)&BytecodeHelper::doSuperSendHelper, Int64, 4, pInt64, pVMFrame, pInt64, Int64);
 	DefineFunction((char *)"popFrameAndPushResult", (char *)BytecodeHelper::BYTECODEHELPER_FILE, (char *)BytecodeHelper::POP_FRAME_AND_PUSH_RESULT_LINE, (void *)&BytecodeHelper::popFrameAndPushResult, NoType, 3, pInt64, pVMFrame, pInt64);
 	DefineFunction((char *)"popToContext", (char *)BytecodeHelper::BYTECODEHELPER_FILE, (char *)BytecodeHelper::POP_TO_CONTEXT_LINE, (void *)&BytecodeHelper::popToContext, Int64, 2, pInt64, Int64);
 	DefineFunction((char *)"printObject", (char *)BytecodeHelper::BYTECODEHELPER_FILE, (char *)BytecodeHelper::PRINT_OBJECT_LINE, (void *)&BytecodeHelper::printObject, Int64, 3, Int64, Int64, Int64);
@@ -738,7 +738,7 @@ SOMppMethod::doPushBlock(OMR::JitBuilder::BytecodeBuilder *builder, long bytecod
 	OMR::JitBuilder::IlValue *block =
 	builder->Call("getNewBlock", 3,
 	builder->	Load("frame"),
-	builder->	ConstInt64((int64_t)blockMethod),
+	builder->	ConstRelocatableAddress((int64_t*)blockMethod),
 	builder->	ConstInt64((int64_t)numOfArgs));
 
 	OMR::JitBuilder::IlValue *self = getSelf(builder);
@@ -913,7 +913,7 @@ SOMppMethod::doSend(OMR::JitBuilder::BytecodeBuilder *lookup, OMR::JitBuilder::B
 	lookup->Store("invokable",
 	lookup->	Call("getInvokable", 2,
 	lookup->		Load("receiverClass"),
-	lookup->		ConstAddress((int64_t*)signature)));
+	lookup->		ConstRelocatableAddress((int64_t*)signature)));
 
 	// return : Int64
 	lookup->Store("return",
@@ -922,7 +922,7 @@ SOMppMethod::doSend(OMR::JitBuilder::BytecodeBuilder *lookup, OMR::JitBuilder::B
         lookup->	     Load("frame"),
         lookup->	     Load("invokable"),
 			     PICK(lookup, numOfArgs - 1),
-        lookup->	     ConstInt64((int64_t)signature),
+        lookup->	     ConstRelocatableAddress((int64_t*)signature),
 	lookup->	     ConstInt64((int64_t)bytecodeIndex)));
 
 	lookup->AddFallThroughBuilder(merge);
@@ -976,7 +976,7 @@ SOMppMethod::doSuperSend(OMR::JitBuilder::BytecodeBuilder *builder, OMR::JitBuil
 	builder->	Call("doSuperSendHelper", 4,
 	builder->		Load("interpreter"),
 	builder->		Load("frame"),
-	builder->		ConstInt64((int64_t)signature),
+	builder->		ConstRelocatableAddress((int64_t*)signature),
 	builder->		ConstInt64((int64_t)bytecodeIndex)));
 
 	OMR::JitBuilder::IlBuilder *bail = nullptr;
@@ -1066,7 +1066,7 @@ SOMppMethod::doJumpIfFalse(OMR::JitBuilder::BytecodeBuilder *builder, OMR::JitBu
 	OMR::JitBuilder::BytecodeBuilder *destBuilder = bytecodeBuilderTable[calculateBytecodeIndexForJump(method, bytecodeIndex)];
 	builder->IfCmpEqual(&destBuilder,
 	builder->       ConvertTo(Int64, value),
-	builder->	ConstInt64((int64_t)falseObject));
+	builder->	ConstRelocatableAddress((int64_t*)falseObject));
 }
 
 void
@@ -1079,7 +1079,7 @@ SOMppMethod::doJumpIfTrue(OMR::JitBuilder::BytecodeBuilder *builder, OMR::JitBui
 	OMR::JitBuilder::BytecodeBuilder *destBuilder = bytecodeBuilderTable[calculateBytecodeIndexForJump(method, bytecodeIndex)];
 	builder->IfCmpEqual(&destBuilder,
 	builder->       ConvertTo(Int64, value),
-	builder->	ConstInt64((int64_t)trueObject));
+	builder->	ConstRelocatableAddress((int64_t*)trueObject));
 }
 
 void
@@ -1122,7 +1122,7 @@ SOMppMethod::pushField(OMR::JitBuilder::BytecodeBuilder *builder, OMR::JitBuilde
 void
 SOMppMethod::pushConstant(OMR::JitBuilder::BytecodeBuilder *builder, VMMethod *vmMethod, uint8_t constantIndex)
 {
-	PUSH(builder, builder->ConstAddress((int64_t*)vmMethod->indexableFields[constantIndex]));
+	PUSH(builder, builder->ConstRelocatableAddress((int64_t*)vmMethod->indexableFields[constantIndex]));
 }
 
 void
@@ -1134,7 +1134,7 @@ SOMppMethod::pushGlobal(OMR::JitBuilder::BytecodeBuilder *builder, VMSymbol* glo
 	builder->     Load("interpreter"),
 	builder->     Load("frame"),
 		      getSelf(builder),
-	builder->     ConstInt64((int64_t)globalName));
+	builder->     ConstRelocatableAddress((int64_t*)globalName));
 
 	OMR::JitBuilder::IlValue *global =
         builder->      LoadAt(ppInt64,

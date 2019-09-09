@@ -873,7 +873,7 @@ VMObject* Universe::InitializeGlobals() {
     enqueueAOTMethods(load_ptr(falseClass));
 
     saveToSOMCache();
-    // compileAOTMethods();
+    compileAOTMethods();
 
     return systemObject;
 }

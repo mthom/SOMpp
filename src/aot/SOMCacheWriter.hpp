@@ -13,8 +13,8 @@ public:
         : cache(cache)
     {
         // the prelude without compiled methods or relocations is
-        // about 95 bytes in size.
-        contents.reserve(95 * 1024);
+        // about 98 bytes in size.
+        contents.reserve(99 * 1024);
     }
 
     void writeHeader(SOMCacheMetadataItemHeader header)
