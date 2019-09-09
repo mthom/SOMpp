@@ -26,9 +26,12 @@
  THE SOFTWARE.
  */
 
+#include "../aot/SOMObjectVisitor.hpp"
 #include "VMObject.h"
 
 class VMBlock: public VMObject {
+    friend class ObjectSerializer;
+    friend class ObjectDeserializer;
 public:
     typedef GCBlock Stored;
     
@@ -47,9 +50,12 @@ public:
             void      SetMethod(VMMethod*);
     inline  void      SetContext(VMFrame*);
     inline  VMFrame*  GetContext() const;
-    virtual VMBlock*  Clone() const;
-    
+    virtual VMBlock*  Clone() const;    
     virtual StdString AsDebugString() const;
+
+    virtual void visit(SOMObjectVisitor& visitor) {
+        visitor(this);
+    }
 
     static VMEvaluationPrimitive* GetEvaluationPrimitive(int);
 private:

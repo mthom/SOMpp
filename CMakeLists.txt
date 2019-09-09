@@ -2,9 +2,13 @@ cmake_minimum_required (VERSION 2.8.11)
 project (SOMPP)
 
 # set(CMAKE_PROJECT_ROOT ${CMAKE_CURRENT_SOURCE_DIR})
-# set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}") # -fsanitize=thread")
+
+set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE ccache)
+set_property(GLOBAL PROPERTY RULE_LAUNCH_LINK ccache)
 
 add_subdirectory(omr)
 
@@ -71,7 +75,8 @@ set(JIT_SRC # "${JIT_INCLUDE}/SOMppMethod.cpp"
 
 set(AOT_INCLUDE "${CMAKE_CURRENT_SOURCE_DIR}/src/aot")
 
-set(AOT_SRC "${AOT_INCLUDE}/BufferWriter.cpp")
+set(AOT_SRC "${AOT_INCLUDE}/ObjectSerializer.cpp" 
+            "${AOT_INCLUDE}/ObjectDeserializer.cpp")
 
 set(VM_OBJECTS_INCLUDE "${CMAKE_CURRENT_SOURCE_DIR}/src/vmobjects")
 
@@ -97,7 +102,7 @@ add_library(som_vm INTERFACE)
 target_sources(som_vm INTERFACE
   "${VM_SRC}" "${COMPILER_SRC}" "${INTERPRETER_SRC}" "${VM_OBJECTS_SRC}"
   "${MEMORY_SRC}" "${JIT_SRC}" "${PRIMITIVES_CORE_SRC}" "${AOT_SRC}"
-  "${PRIMITIVES_SRC}" "${MISC_SRC}" )
+  "${PRIMITIVES_SRC}" "${MISC_SRC}")
 
 target_link_libraries(som_vm INTERFACE jitbuilder omrcore omrvmstartup)
 
@@ -178,6 +183,7 @@ target_include_directories(som PRIVATE ${VM_INCLUDE}
 				       ${MEMORY_INCLUDE}
 				       ${OMR_GLUE_INCLUDE}
 				       ${OMR_INCLUDE}
+				       ${SOM_CACHE_INCLUDE}
 				       src/)
 
 target_link_libraries(som omr_som_gc_glue omrgc som_vm)

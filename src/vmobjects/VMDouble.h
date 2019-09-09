@@ -26,9 +26,12 @@
  THE SOFTWARE.
  */
 
+#include "../aot/SOMObjectVisitor.hpp"
 #include "AbstractObject.h"
 
 class VMDouble: public AbstractVMObject {
+    friend class ObjectSerializer;
+    friend class ObjectDeserializer;
 public:
     typedef GCDouble Stored;
 
@@ -43,6 +46,10 @@ public:
     virtual VMClass* GetClass() const;
     inline virtual size_t GetObjectSize() const;
 
+    virtual void visit(SOMObjectVisitor& visitor) {
+        visitor(this);
+    }
+    
     virtual void MarkObjectAsInvalid() {}
 
     virtual StdString AsDebugString() const;

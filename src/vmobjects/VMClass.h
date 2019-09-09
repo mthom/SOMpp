@@ -28,6 +28,7 @@
 
 #include <vector>
 
+#include "../aot/SOMObjectVisitor.hpp"
 #include "../vm/DispatchTable.h"
 #include "VMObject.h"
 
@@ -38,9 +39,14 @@
 #include "../primitives/Core.h"
 #endif
 
+class VMClass;
+
 class ClassGenerationContext;
 
 class VMClass: public VMObject {
+    friend class SOMCompositeCache;
+    friend class ObjectSerializer;
+    friend class ObjectDeserializer;
 public:
     typedef GCClass Stored;
     
@@ -77,6 +83,10 @@ public:
            void         WalkObjects(walk_heap_fn walk);	   
 	   
     virtual void MarkObjectAsInvalid();
+    
+    virtual void visit(SOMObjectVisitor& visitor) {
+        visitor(this);
+    }
 
     VMInvokable* LookupMethodByCard(VMSymbol* signature); //uint64_t card);
     virtual StdString AsDebugString() const;
@@ -103,7 +113,7 @@ private:
     GCArray* instanceFields;
     GCArray* instanceInvokables;
 
-    static const long VMClassNumberOfFields;
+    static const long VMClassNumberOfFields;    
 };
 
 #include "VMSymbol.h"

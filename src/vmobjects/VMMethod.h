@@ -29,6 +29,7 @@
 #include <iostream>
 #include <map>
 
+#include "../aot/SOMObjectVisitor.hpp"
 #include "VMInvokable.h"
 #include "VMInteger.h"
 #include "vm/Universe.h"
@@ -43,6 +44,9 @@ class MethodGenerationContext;
 class Interpreter;
 
 class VMMethod: public VMInvokable {
+    friend class ObjectSerializer;
+    friend class ObjectDeserializer;
+    friend class SOMCompositeCache;
     friend class Interpreter;
     friend class SOMppMethod;
     friend class Universe;
@@ -81,6 +85,10 @@ public:
 
     virtual StdString AsDebugString() const;
 
+    virtual void visit(SOMObjectVisitor& visitor) {
+        visitor(this);
+    }
+    
 #if GC_TYPE == OMR_GARBAGE_COLLECTION
    inline void setInvokeReceiverCache(VMClass* receiverClass, long bytecodeIndex);
    inline VMClass* getInvokeReceiverCache(long bytecodeIndex);

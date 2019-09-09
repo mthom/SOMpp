@@ -36,6 +36,7 @@
 #include <vm/Universe.h>
 
 #include "ObjectFormats.h"
+#include "../aot/SOMObjectVisitor.hpp"
 
 // this macro returns a shifted ptr by offset bytes
 #define SHIFTED_PTR(ptr, offset) ((void*)((size_t)(ptr)+(size_t)(offset)))
@@ -65,7 +66,8 @@
 #define FIELDS (((gc_oop_t*)&clazz) + fieldsOffset)
 
 class VMObject: public AbstractVMObject {
-
+    friend class ObjectSerializer;
+    friend class ObjectDeserializer;
 public:
     typedef GCObject Stored;
     
@@ -88,6 +90,12 @@ public:
     
     virtual        StdString AsDebugString() const;
 
+    virtual void visit(SOMObjectVisitor& visitor) {
+        visitor(this);
+    }
+
+    VMObject& AssignObject(const VMObject& obj, const long numberOfIntrinsicFields = 0);
+
     /**
      * usage: new( <heap> [, <additional_bytes>] ) VMObject( <constructor params> )
      * num_bytes parameter is set by the compiler.
@@ -109,9 +117,9 @@ public:
       std::vector<fomrobject_t*> fields{ (fomrobject_t*) &clazz };
 
       // now add the FIELDS, starting at (gc_oop*)clazz + 1.
-      for(uintptr_t i = 0; i < numberOfFields; ++i) {
-	if(FIELDS[i] != nullptr && *(omrobjectptr_t*) FIELDS[i] != nullptr) {
-	  fields.push_back((fomrobject_t*) &FIELDS[i]);
+      for(long i = 0; i < numberOfFields; ++i) {
+	if (FIELDS[i] != nullptr && *(omrobjectptr_t*) FIELDS[i] != nullptr) {
+	   fields.push_back((fomrobject_t*) &FIELDS[i]);
 	}
       }
 

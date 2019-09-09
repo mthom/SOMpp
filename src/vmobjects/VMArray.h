@@ -26,12 +26,15 @@
  THE SOFTWARE.
  */
 
+#include "../aot/SOMObjectVisitor.hpp"
 #include "VMObject.h"
 #include "VMInteger.h"
 
 #include <vector>
 
 class VMArray: public VMObject {
+    friend class ObjectSerializer;
+    friend class ObjectDeserializer;
 public:
     typedef GCArray Stored;
     
@@ -48,6 +51,10 @@ public:
     
     virtual StdString AsDebugString() const;
     virtual std::vector<fomrobject_t*> GetFieldPtrs();
+
+    virtual void visit(SOMObjectVisitor& visitor) {
+        visitor(this);
+    }
 
 private:
     virtual void MarkObjectAsInvalid();

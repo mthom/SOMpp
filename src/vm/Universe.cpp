@@ -46,6 +46,10 @@
 #include <vmobjects/VMString.h>
 #include <vmobjects/VMEvaluationPrimitive.h>
 
+#include <aot/ObjectDeserializer.hpp>
+#include <aot/ObjectSerializer.hpp>
+#include <aot/SOMCacheWriter.hpp>
+
 #include <interpreter/bytecodes.h>
 
 #include <compiler/Disassembler.h>
@@ -59,9 +63,13 @@
 #include "../../omrglue/CollectorLanguageInterfaceImpl.hpp"
 #include "../../src/jit/SOMppMethod_with_vm_state.hpp"
 #include "../../omr/include_core/omrvm.h"
+#include "../../omr/compiler/env/CompilerEnv.hpp"
+#include "../../omr/compiler/env/SharedCache.hpp"
 #include "../../omr/include_core/omrlinkedlist.h"
 #include "../../omrglue/MarkingDelegate.hpp"
 #endif
+
+#include <memory>
 
 #if CACHE_INTEGER
 gc_oop_t prebuildInts[INT_CACHE_MAX_VALUE - INT_CACHE_MIN_VALUE + 1];
@@ -326,39 +334,25 @@ VMMethod* Universe::createBootstrapMethod(VMClass* holder, long numArgsOfMsgSend
 
 #if GC_TYPE == OMR_GARBAGE_COLLECTION
 void Universe::compileAOTMethods() {
-   if (!enableJIT && !initializeJitWithOptions("-Xjit:acceptHugeMethods,enableBasicBlockHoisting,"
-			      "omitFramePointer,useILValidator,enableRelocatableELFGeneration,"
-			      "traceIlGen,traceFull,log=trtrace.log,"
-			      "objectFile=tempmod.o")) {
-     Universe::ErrorPrint("Could not initialize JIT\n");
-     GetUniverse()->Quit(-1);
-   }
-
    uint32_t rc = 0;
-   
-   setCodeEntry("callFunction",reinterpret_cast<void*>(VMSymbol::setMinimalCardValue));
-   setCodeEntry("setAssumptionID",reinterpret_cast<void*>(SOMppMethod::setMinimalAssumptionID));
+   void *entry = nullptr;
+
    for (auto& methodStub : aotMethodQueue) {
-     OMR::JitBuilder::TypeDictionary types;
-
-     SOMppMethod methodBuilder(&types, methodStub, false);
-     void *entry = nullptr;
-     
      std::string methodName(methodStub->GetHolder()->GetName()->GetChars());
-     methodName = methodName+">>#"+methodStub->GetSignature()->GetChars();
+     methodName = methodName + ">>#" + methodStub->GetSignature()->GetChars();
 
+     if ((entry = getCodeEntry(const_cast<char*>(methodName.c_str())))) {
+       methodStub->compiledMethod = (SOMppFunctionType *) entry;
+       relocateCodeEntry(const_cast<char*>(methodName.c_str()), entry);
+     } else {
+       OMR::JitBuilder::TypeDictionary types;
 
-     if(entry = getCodeEntry(const_cast<char*>(methodName.c_str()))){
-       methodStub->compiledMethod = (SOMppFunctionType *)entry;
-       relocateCodeEntry(const_cast<char*>(methodName.c_str()),entry);
-     }
-     else {
-       
+       SOMppMethod methodBuilder(&types, methodStub, false);
        rc = (*compileMethodBuilder)(&methodBuilder, &entry);
 
        if (0 == rc) {
-         storeCodeEntry(const_cast<char*>(methodName.c_str()),entry);
-         methodStub->compiledMethod = (SOMppFunctionType *)entry;
+         storeCodeEntry(const_cast<char*>(methodName.c_str()), entry);
+         methodStub->compiledMethod = (SOMppFunctionType *) entry;
        }
      }
    }
@@ -504,6 +498,11 @@ void Universe::shutdownJITAsyncCompileThread(SOM_VM *vm) {
 }
 #endif
 
+void Universe::LoadPrimitives(VMClass* result) {
+   if (result->HasPrimitives() || result->GetClass()->HasPrimitives())
+      result->LoadPrimitives(classPath);
+}
+
 void Universe::initialize(long _argc, char** _argv) {
 #ifdef GENERATE_ALLOCATION_STATISTICS
     allocationStats["VMArray"] = {0,0};
@@ -557,7 +556,17 @@ void Universe::initialize(long _argc, char** _argv) {
     }
 #endif
 
-    VMObject* systemObject = InitializeGlobals();
+    if (!enableJIT && !initializeJitWithOptions("-Xjit:acceptHugeMethods,enableBasicBlockHoisting,"
+			      "omitFramePointer,useILValidator,enableRelocatableELFGeneration,"
+			      "traceIlGen,traceFull,log=trtrace.log,"
+			      "objectFile=tempmod.o")) {
+      Universe::ErrorPrint("Could not initialize JIT\n");
+      GetUniverse()->Quit(-1);
+    }
+
+    TR::SharedCache* sharedCache = TR::Compiler->aotAdapter.getSharedCache();
+
+    VMObject* systemObject = sharedCache->createdNewCache() ? InitializeGlobals() : InitializeFromCache();
     VMMethod* bootstrapMethod = createBootstrapMethod(load_ptr(systemClass), 2);
 
     if (argv.size() == 0) {
@@ -628,7 +637,7 @@ Universe::~Universe() {
     void* vt_string;
     void* vt_symbol;
 
-    bool Universe::IsValidObject(vm_oop_t obj) {
+    bool Universe::IsValidObjectWithoutAssert(vm_oop_t obj) {
         if (IS_TAGGED(obj))
             return true;
 
@@ -659,8 +668,14 @@ Universe::~Universe() {
                vt == vt_primitive  ||
                vt == vt_string     ||
                vt == vt_symbol;
-        assert(b);
+
         return b;
+    }
+
+    bool Universe::IsValidObject(vm_oop_t obj) {
+        bool b = IsValidObjectWithoutAssert(obj);
+	assert(b);
+	return b;
     }
 
     static void set_vt_to_null() {
@@ -714,6 +729,45 @@ Universe::~Universe() {
     }
 #endif
 
+void Universe::saveToSOMCache()
+{
+   TR::SharedCache* sharedCache = TR::Compiler->aotAdapter.getSharedCache();
+
+   SOMCacheWriter writer(sharedCache);
+   ObjectSerializer serializer(&writer);
+
+   load_ptr(nilObject)->visit(serializer);
+
+   load_ptr(trueObject)->visit(serializer);
+   load_ptr(falseObject)->visit(serializer);
+
+   load_ptr(objectClass)->visit(serializer);
+   load_ptr(classClass)->visit(serializer);
+   load_ptr(metaClassClass)->visit(serializer);
+
+   load_ptr(nilClass)->visit(serializer);
+   load_ptr(integerClass)->visit(serializer);
+   load_ptr(arrayClass)->visit(serializer);
+   load_ptr(methodClass)->visit(serializer);
+   load_ptr(symbolClass)->visit(serializer);
+   load_ptr(primitiveClass)->visit(serializer);
+   load_ptr(stringClass)->visit(serializer);
+   load_ptr(systemClass)->visit(serializer);
+   load_ptr(blockClass)->visit(serializer);
+   load_ptr(doubleClass)->visit(serializer);
+
+#if GC_TYPE == OMR_GARBAGE_COLLECTION
+   load_ptr(booleanClass)->visit(serializer);
+#endif
+
+   load_ptr(trueClass)->visit(serializer);
+   load_ptr(falseClass)->visit(serializer);
+   load_ptr(symbolIfTrue)->visit(serializer);
+   load_ptr(symbolIfFalse)->visit(serializer);
+
+   writer.flushToCache();
+}
+
 VMObject* Universe::InitializeGlobals() {
     set_vt_to_null();
 
@@ -721,7 +775,7 @@ VMObject* Universe::InitializeGlobals() {
 
     //
     //allocate nil object
-    //    
+    //
     VMObject* nil = new (GetHeap<HEAP_CLS>()) VMObject;
     nilObject = _store_ptr(nil);
     nil->SetClass((VMClass*) nil);
@@ -790,7 +844,6 @@ VMObject* Universe::InitializeGlobals() {
 
     systemClass = _store_ptr(LoadClass(SymbolForChars("System")));
 
-
     VMObject* systemObject = NewInstance(load_ptr(systemClass));
 
     SetGlobal(SymbolForChars("nil"),    load_ptr(nilObject));
@@ -803,9 +856,149 @@ VMObject* Universe::InitializeGlobals() {
     symbolIfTrue  = _store_ptr(SymbolForChars("ifTrue:"));
     symbolIfFalse = _store_ptr(SymbolForChars("ifFalse:"));
 
-    //    if (enableJIT) {
+    enqueueAOTMethods(load_ptr(objectClass));
+    enqueueAOTMethods(load_ptr(classClass));
+    enqueueAOTMethods(load_ptr(metaClassClass));
+    enqueueAOTMethods(load_ptr(nilClass));
+    enqueueAOTMethods(load_ptr(arrayClass));
+    enqueueAOTMethods(load_ptr(methodClass));
+    enqueueAOTMethods(load_ptr(symbolClass));
+    enqueueAOTMethods(load_ptr(integerClass));
+    enqueueAOTMethods(load_ptr(primitiveClass));
+    enqueueAOTMethods(load_ptr(stringClass));
+    enqueueAOTMethods(load_ptr(doubleClass));
+    enqueueAOTMethods(load_ptr(systemClass));
+    enqueueAOTMethods(load_ptr(blockClass));
+    enqueueAOTMethods(load_ptr(trueClass));
+    enqueueAOTMethods(load_ptr(falseClass));
+
+    saveToSOMCache();
     compileAOTMethods();
-       //    }
+
+    return systemObject;
+}
+
+
+VMObject* Universe::InitializeFromCache()
+{
+    set_vt_to_null();
+
+    auto* cache = TR::Compiler->aotAdapter.getSharedCache();
+    auto it = cache->constructMetadataSectionEntryIterator();
+
+    ObjectDeserializer deserialize;
+
+    nilObject       = (GCObject*) deserialize(it);
+
+    trueObject      = (GCObject*) deserialize(it);
+    falseObject     = (GCObject*) deserialize(it);
+
+    objectClass     = (GCClass*) deserialize(it);
+    classClass      = (GCClass*) deserialize(it);
+    metaClassClass  = (GCClass*) deserialize(it);
+
+    nilClass        = (GCClass*) deserialize(it);
+    integerClass    = (GCClass*) deserialize(it);
+    arrayClass      = (GCClass*) deserialize(it);
+    methodClass     = (GCClass*) deserialize(it);
+    symbolClass     = (GCClass*) deserialize(it);
+    primitiveClass  = (GCClass*) deserialize(it);
+    stringClass     = (GCClass*) deserialize(it);
+    systemClass     = (GCClass*) deserialize(it);
+    blockClass      = (GCClass*) deserialize(it);
+    doubleClass     = (GCClass*) deserialize(it);
+#if GC_TYPE == OMR_GARBAGE_COLLECTION
+    booleanClass    = (GCClass*) deserialize(it);
+#endif
+    trueClass       = (GCClass*) deserialize(it);
+    falseClass      = (GCClass*) deserialize(it);
+    symbolIfTrue    = (GCSymbol*) deserialize(it);
+    symbolIfFalse   = (GCSymbol*) deserialize(it);
+
+    obtain_vtables_of_known_classes(load_ptr(nilClass)->GetName());
+
+    SetGlobal(load_ptr(objectClass)->GetName(), load_ptr(objectClass));
+    SetGlobal(load_ptr(classClass)->GetName(), load_ptr(classClass));
+    SetGlobal(load_ptr(metaClassClass)->GetName(), load_ptr(metaClassClass));
+    SetGlobal(load_ptr(nilClass)->GetName(), load_ptr(nilClass));
+    SetGlobal(load_ptr(arrayClass)->GetName(), load_ptr(arrayClass));
+    SetGlobal(load_ptr(methodClass)->GetName(), load_ptr(methodClass));
+    SetGlobal(load_ptr(stringClass)->GetName(), load_ptr(stringClass));
+    SetGlobal(load_ptr(symbolClass)->GetName(), load_ptr(symbolClass));
+    SetGlobal(load_ptr(integerClass)->GetName(), load_ptr(integerClass));
+    SetGlobal(load_ptr(primitiveClass)->GetName(), load_ptr(primitiveClass));
+    SetGlobal(load_ptr(doubleClass)->GetName(), load_ptr(doubleClass));
+    SetGlobal(load_ptr(blockClass)->GetName(), load_ptr(blockClass));
+
+    LoadPrimitives(load_ptr(objectClass));
+    LoadPrimitives(load_ptr(classClass));
+    LoadPrimitives(load_ptr(metaClassClass));
+    LoadPrimitives(load_ptr(nilClass));
+    LoadPrimitives(load_ptr(arrayClass));
+    LoadPrimitives(load_ptr(methodClass));
+    LoadPrimitives(load_ptr(symbolClass));
+    LoadPrimitives(load_ptr(integerClass));
+    LoadPrimitives(load_ptr(primitiveClass));
+    LoadPrimitives(load_ptr(stringClass));
+    LoadPrimitives(load_ptr(blockClass));
+    LoadPrimitives(load_ptr(doubleClass));
+    LoadPrimitives(load_ptr(systemClass));
+
+    LoadPrimitives(load_ptr(booleanClass));
+    LoadPrimitives(load_ptr(falseClass));
+    LoadPrimitives(load_ptr(trueClass));
+
+    VMObject* systemObject = NewInstance(load_ptr(systemClass));
+
+    SetGlobal(SymbolForChars("Boolean"), load_ptr(booleanClass));
+    SetGlobal(SymbolForChars("False"), load_ptr(falseClass));
+    SetGlobal(SymbolForChars("True"), load_ptr(trueClass));
+
+    SetGlobal(SymbolForChars("nil"),    load_ptr(nilObject));
+    SetGlobal(SymbolForChars("true"),   load_ptr(trueObject));
+    SetGlobal(SymbolForChars("false"),  load_ptr(falseObject));
+    SetGlobal(SymbolForChars("system"), systemObject);
+    SetGlobal(SymbolForChars("System"), load_ptr(systemClass));
+    SetGlobal(SymbolForChars("Block"),  load_ptr(blockClass));
+
+    enqueueAOTMethods(load_ptr(objectClass));
+    enqueueAOTMethods(load_ptr(classClass));
+    enqueueAOTMethods(load_ptr(metaClassClass));
+    enqueueAOTMethods(load_ptr(nilClass));
+    enqueueAOTMethods(load_ptr(arrayClass));
+    enqueueAOTMethods(load_ptr(methodClass));
+    enqueueAOTMethods(load_ptr(symbolClass));
+    enqueueAOTMethods(load_ptr(integerClass));
+    enqueueAOTMethods(load_ptr(primitiveClass));
+    enqueueAOTMethods(load_ptr(stringClass));
+    enqueueAOTMethods(load_ptr(blockClass));
+    enqueueAOTMethods(load_ptr(doubleClass));
+    enqueueAOTMethods(load_ptr(systemClass));
+    
+    /*
+    // ackshually, this should be a separate region! If you want to be assured
+    // of where the additional metadata is, I mean.
+    while(true) {
+       SOMCacheMetadataEntryDescriptor descriptor = it.next();
+
+       if(descriptor) {
+	   auto object = reinterpret_cast<vm_oop_t>(deserialize(it));
+
+	   if (object == nullptr)
+	      break;
+
+	   if (auto clazz = dynamic_cast<VMClass*>(object)) {
+	      SetGlobal(clazz->GetName(), clazz);
+	      LoadPrimitives(clazz);
+	      enqueueAOTMethods(clazz);
+	   }
+       } else {
+	   break;
+       }
+    }
+    */
+    
+    compileAOTMethods();
 
     return systemObject;
 }
@@ -952,8 +1145,6 @@ void Universe::LoadSystemClass(VMClass* systemClass) {
 
     if (result->HasPrimitives() || result->GetClass()->HasPrimitives())
        result->LoadPrimitives(classPath);
-
-    enqueueAOTMethods(systemClass);
 }
 
 VMArray* Universe::NewArray(long size) const {

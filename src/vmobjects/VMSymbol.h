@@ -28,16 +28,18 @@
 
 #include <iostream>
 
+#include "../aot/SOMObjectVisitor.hpp"
 #include "VMString.h"
 #include "VMObject.h"
 
 class VMSymbol: public VMString {
-    friend class SOMppMethod;
 public:
     typedef GCSymbol Stored;
 
     VMSymbol(const char* str);
     VMSymbol(const StdString& s);
+    VMSymbol(const char* chars, int numberOfArgumentsOfSignature, uint64_t card);
+    
     virtual StdString GetPlainString() const;
     virtual size_t GetObjectSize() const;
     virtual VMSymbol* Clone() const;
@@ -67,6 +69,10 @@ public:
       return fields;
     }
 
+    virtual void visit(SOMObjectVisitor& visitor) {
+        visitor(this);
+    }
+    
 private:
     const int numberOfArgumentsOfSignature;
     const GCClass* cachedClass_invokable[3];
@@ -79,9 +85,13 @@ private:
     inline void UpdateCachedInvokable(const VMClass* cls, VMInvokable* invo);
     
     virtual void WalkObjects(walk_heap_fn);
-
+    
     friend class Signature;
     friend class VMClass;
+    friend class ObjectSerializer;
+    friend class ObjectDeserializer;
+    friend class SOMCompositeCache;
+    friend class SOMppMethod;
 };
 
 
