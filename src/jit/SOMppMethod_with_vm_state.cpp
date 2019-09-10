@@ -179,8 +179,6 @@ SOMppMethod::setMinimalAssumptionID(uint64_t min)
            assumptionID = min;
 }
 
-
->>>>>>> Stashed changes
 OMR::JitBuilder::IlValue *
 SOMppMethod::add(OMR::JitBuilder::BytecodeBuilder *builder, OMR::JitBuilder::IlValue *param1, OMR::JitBuilder::IlValue *param2)
 {

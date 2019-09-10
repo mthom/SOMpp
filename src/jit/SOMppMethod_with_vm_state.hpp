@@ -153,7 +153,6 @@ private:
 	VMMethod *inlinedMethods[MAX_RECURSIVE_INLINING_DEPTH + 1];
 	long inlinedBytecodeIndecies[MAX_RECURSIVE_INLINING_DEPTH + 1];
 	int32_t extraStackDepthRequired;
-        static uint64_t assumptionID;
 	/* Should inlining be attempted */
 	bool doInlining;
 	bool doLoopInlining;

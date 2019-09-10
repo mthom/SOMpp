@@ -51,11 +51,6 @@ public:
         return card;
     }
 
-    static void setMinimalCardValue(uint64_t min) {
-      if (min > lastUnusedCard)
-         lastUnusedCard = min+1;
-    }
-
     static uint64_t getCardValue() { return lastUnusedCard; }
     
     static void setMinimalCardValue(uint64_t min) {
