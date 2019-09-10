@@ -738,7 +738,7 @@ SOMppMethod::doPushBlock(OMR::JitBuilder::BytecodeBuilder *builder, long bytecod
 	OMR::JitBuilder::IlValue *block =
 	builder->Call("getNewBlock", 3,
 	builder->	Load("frame"),
-	builder->	ConstRelocatableAddress((int64_t*)blockMethod),
+	builder->	ConstRelocatableAddress((int64_t*)blockMethod, blockMethod->GetObjectSize()),
 	builder->	ConstInt64((int64_t)numOfArgs));
 
 	OMR::JitBuilder::IlValue *self = getSelf(builder);
@@ -913,7 +913,7 @@ SOMppMethod::doSend(OMR::JitBuilder::BytecodeBuilder *lookup, OMR::JitBuilder::B
 	lookup->Store("invokable",
 	lookup->	Call("getInvokable", 2,
 	lookup->		Load("receiverClass"),
-	lookup->		ConstRelocatableAddress((int64_t*)signature)));
+	lookup->		ConstRelocatableAddress((int64_t*)signature, signature->GetObjectSize())));
 
 	// return : Int64
 	lookup->Store("return",
@@ -922,7 +922,7 @@ SOMppMethod::doSend(OMR::JitBuilder::BytecodeBuilder *lookup, OMR::JitBuilder::B
         lookup->	     Load("frame"),
         lookup->	     Load("invokable"),
 			     PICK(lookup, numOfArgs - 1),
-        lookup->	     ConstRelocatableAddress((int64_t*)signature),
+	lookup->	     ConstRelocatableAddress((int64_t*)signature, signature->GetObjectSize()),
 	lookup->	     ConstInt64((int64_t)bytecodeIndex)));
 
 	lookup->AddFallThroughBuilder(merge);
@@ -976,7 +976,7 @@ SOMppMethod::doSuperSend(OMR::JitBuilder::BytecodeBuilder *builder, OMR::JitBuil
 	builder->	Call("doSuperSendHelper", 4,
 	builder->		Load("interpreter"),
 	builder->		Load("frame"),
-	builder->		ConstRelocatableAddress((int64_t*)signature),
+	builder->		ConstRelocatableAddress((int64_t*)signature, signature->GetObjectSize()),
 	builder->		ConstInt64((int64_t)bytecodeIndex)));
 
 	OMR::JitBuilder::IlBuilder *bail = nullptr;
@@ -1066,7 +1066,7 @@ SOMppMethod::doJumpIfFalse(OMR::JitBuilder::BytecodeBuilder *builder, OMR::JitBu
 	OMR::JitBuilder::BytecodeBuilder *destBuilder = bytecodeBuilderTable[calculateBytecodeIndexForJump(method, bytecodeIndex)];
 	builder->IfCmpEqual(&destBuilder,
 	builder->       ConvertTo(Int64, value),
-	builder->	ConstRelocatableAddress((int64_t*)falseObject));
+        builder->	ConstRelocatableAddress((int64_t*)falseObject, load_ptr(falseObject)->GetObjectSize()));
 }
 
 void
@@ -1079,7 +1079,7 @@ SOMppMethod::doJumpIfTrue(OMR::JitBuilder::BytecodeBuilder *builder, OMR::JitBui
 	OMR::JitBuilder::BytecodeBuilder *destBuilder = bytecodeBuilderTable[calculateBytecodeIndexForJump(method, bytecodeIndex)];
 	builder->IfCmpEqual(&destBuilder,
 	builder->       ConvertTo(Int64, value),
-	builder->	ConstRelocatableAddress((int64_t*)trueObject));
+        builder->	ConstRelocatableAddress((int64_t*)trueObject, load_ptr(trueObject)->GetObjectSize()));
 }
 
 void
@@ -1122,7 +1122,8 @@ SOMppMethod::pushField(OMR::JitBuilder::BytecodeBuilder *builder, OMR::JitBuilde
 void
 SOMppMethod::pushConstant(OMR::JitBuilder::BytecodeBuilder *builder, VMMethod *vmMethod, uint8_t constantIndex)
 {
-	PUSH(builder, builder->ConstRelocatableAddress((int64_t*)vmMethod->indexableFields[constantIndex]));
+        PUSH(builder, builder->ConstRelocatableAddress((int64_t*)vmMethod->indexableFields[constantIndex],
+						       vmMethod->GetObjectSize()));
 }
 
 void
@@ -1134,7 +1135,7 @@ SOMppMethod::pushGlobal(OMR::JitBuilder::BytecodeBuilder *builder, VMSymbol* glo
 	builder->     Load("interpreter"),
 	builder->     Load("frame"),
 		      getSelf(builder),
-	builder->     ConstRelocatableAddress((int64_t*)globalName));
+	builder->     ConstRelocatableAddress((int64_t*)globalName, globalName->GetObjectSize()));
 
 	OMR::JitBuilder::IlValue *global =
         builder->      LoadAt(ppInt64,
