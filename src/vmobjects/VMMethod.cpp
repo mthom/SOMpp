@@ -48,6 +48,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <ctime>
+#include <iostream>
 
 #if GC_TYPE == OMR_GARBAGE_COLLECTION
 #define MAX_INVOKES_BEFORE_COMPILE 10
@@ -163,7 +164,9 @@ void VMMethod::Invoke(Interpreter* interp, VMFrame* frame) {
 	if(allowedInvocations < 3 && NULL != compiledMethod) {
 	  frm->SetIsJITFrame(true);
 	  allowedInvocations++;
+	  std::cout << "executing " << GetSignature()->GetChars() << "\n";
 	  compiledMethod((int64_t*)interp, frm);
+	  std::cout << "finished executing " << GetSignature()->GetChars() << "\n";
 	} else if (invokedCount > 0) {
 		if (0 == --invokedCount) {
 			if (enableJIT) {

@@ -17,7 +17,11 @@ public:
     gc_oop_t operator()(MetadataIterator&);
 
     uint64_t getMaxCard() { return card; }
-
+    
+    std::map<ItemHeader, AbstractVMObject*>* GetAddressOfOldNewAddresses() {
+        return &oldNewAddresses;
+    }
+    
 private:
     gc_oop_t isSeenObject(const ItemHeader&);
 

@@ -116,6 +116,8 @@ target_include_directories(som_vm INTERFACE
   "${MISC_INCLUDE}")
 
 set(OMR_INCLUDE "${CMAKE_CURRENT_SOURCE_DIR}/omr/compiler"
+                "${CMAKE_CURRENT_SOURCE_DIR}/omr/compiler/codegen"
+                "${CMAKE_CURRENT_SOURCE_DIR}/omr/compiler/x/amd64"
                 "${CMAKE_CURRENT_SOURCE_DIR}/omr/jitbuilder/release/include"
                 "${CMAKE_CURRENT_SOURCE_DIR}/omr/gc"
 		"${CMAKE_CURRENT_SOURCE_DIR}/omr/gc/structs"
