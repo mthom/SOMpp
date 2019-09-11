@@ -30,6 +30,23 @@ inline void read_direct(T* sink, T source)
    *const_cast<unconst_T*>(sink) = source;
 }
 
+void ObjectDeserializer::eraseAllSubObjectsAtAddress(AbstractVMObject* obj)
+{
+   // size doesn't affect lookup, so it can be ignored as part of the key.
+   oldNewAddresses.erase(ItemHeader { ItemHeader::object, obj, 0 });
+   oldNewAddresses.erase(ItemHeader { ItemHeader::array, obj, 0 });
+   oldNewAddresses.erase(ItemHeader { ItemHeader::num_integer, obj, 0 });
+   oldNewAddresses.erase(ItemHeader { ItemHeader::block, obj, 0 });
+   oldNewAddresses.erase(ItemHeader { ItemHeader::clazz, obj, 0 });
+   oldNewAddresses.erase(ItemHeader { ItemHeader::num_double, obj, 0 });
+   oldNewAddresses.erase(ItemHeader { ItemHeader::eval_prim, obj, 0 });
+   oldNewAddresses.erase(ItemHeader { ItemHeader::frame, obj, 0 });
+   oldNewAddresses.erase(ItemHeader { ItemHeader::method, obj, 0 });
+   oldNewAddresses.erase(ItemHeader { ItemHeader::prim, obj, 0 });
+   oldNewAddresses.erase(ItemHeader { ItemHeader::vm_string, obj, 0 });
+   oldNewAddresses.erase(ItemHeader { ItemHeader::symbol, obj, 0 });
+}
+
 gc_oop_t ObjectDeserializer::operator()(MetadataIterator& it)
 {
    ItemHeader header = it.header();
@@ -129,8 +146,10 @@ GCClass* ObjectDeserializer::createClass(MetadataIterator& it)
    VMClass* clazz = new (GetHeap<HEAP_CLS>(), additionalBytes) VMClass(numberOfFields);
    oldNewAddresses[header] = clazz;
 
-   clazz->AssignObject(*load_ptr(createObject(it, VMClass::VMClassNumberOfFields)),
-		       VMClass::VMClassNumberOfFields);
+   VMObject* obj = load_ptr(createObject(it, VMClass::VMClassNumberOfFields));
+   eraseAllSubObjectsAtAddress(obj);   
+
+   clazz->AssignObject(*obj, VMClass::VMClassNumberOfFields);
 
    read_direct(&clazz->superClass, createClass(it));
    read_direct(&clazz->name, createSymbol(it));
@@ -152,6 +171,7 @@ GCArray* ObjectDeserializer::createArray(MetadataIterator& it)
    }
 
    VMObject* obj = load_ptr(createObject(it, VMArray::VMArrayNumberOfFields));
+   eraseAllSubObjectsAtAddress(obj);
 
    long additionalBytes = header.size - sizeof(VMArray);
    long numberOfFields  = obj->numberOfFields - VMArray::VMArrayNumberOfFields;
@@ -184,10 +204,13 @@ GCBlock* ObjectDeserializer::createBlock(MetadataIterator& it)
       return static_cast<GCBlock*>(obj);
    }
 
-   auto obj = reinterpret_cast<VMObject*>(load_ptr((*this)(it)));
+   auto obj = reinterpret_cast<VMObject*>(load_ptr((*this)(it)));   
+   eraseAllSubObjectsAtAddress(obj);
 
    long additionalBytes = header.size - sizeof(VMBlock);
    VMBlock* block = new (GetHeap<HEAP_CLS>(), additionalBytes) VMBlock();
+
+   block->AssignObject(*obj, VMBlock::VMBlockNumberOfFields);
 
    oldNewAddresses[header] = block;
 
@@ -225,7 +248,6 @@ GCInteger* ObjectDeserializer::createInteger(MetadataIterator& it)
    }
 
    VMInteger* integer = new (GetHeap<HEAP_CLS>()) VMInteger(0);
-
    oldNewAddresses[header] = integer;
 
    read(&integer->embeddedInteger, *it);
@@ -246,6 +268,7 @@ GCPrimitive* ObjectDeserializer::createPrimitive(MetadataIterator& it)
 
    long numberOfIntrinsicFields = VMPrimitive::VMPrimitiveNumberOfFields + VMInvokable::VMInvokableNumberOfFields;
    VMObject* obj = load_ptr(createObject(it, numberOfIntrinsicFields));
+   eraseAllSubObjectsAtAddress(obj);
 
    // this is the location of the signature.
    VMSymbol* signature = load_ptr(createSymbol(it));
@@ -277,7 +300,9 @@ GCEvaluationPrimitive* ObjectDeserializer::createEvaluationPrimitive(MetadataIte
 
    long numberOfIntrinsicFields = VMPrimitive::VMPrimitiveNumberOfFields + VMInvokable::VMInvokableNumberOfFields
      + VMEvaluationPrimitive::VMEvaluationPrimitiveNumberOfFields;
+   
    VMObject* obj = load_ptr(createObject(it, numberOfIntrinsicFields));
+   eraseAllSubObjectsAtAddress(obj);
 
    // this is the location of the signature.
    VMSymbol* signature = load_ptr(createSymbol(it));
@@ -313,6 +338,7 @@ GCMethod* ObjectDeserializer::createMethod(MetadataIterator& it)
 
    long numberOfIntrinsicFields = VMMethod::VMMethodNumberOfFields + VMInvokable::VMInvokableNumberOfFields;
    VMObject* obj = load_ptr(createObject(it, numberOfIntrinsicFields));
+   eraseAllSubObjectsAtAddress(obj);
 
    long additionalBytes = header.size - sizeof(VMMethod);
    long numberOfConstantsEmbedded = 0;
@@ -388,6 +414,7 @@ GCSymbol* ObjectDeserializer::createSymbol(MetadataIterator& it)
    }
 
    VMString* str = load_ptr(createString(it));   
+   eraseAllSubObjectsAtAddress(str);
 
    auto* universe = GetUniverse();
    VMSymbol* s = universe->NewSymbol(str->chars);

@@ -24,6 +24,7 @@ public:
     
 private:
     gc_oop_t isSeenObject(const ItemHeader&);
+    void eraseAllSubObjectsAtAddress(AbstractVMObject*);
 
     GCObject* createObject(MetadataIterator&, long numberOfIntrinsicFields = 0);
     GCArray* createArray(MetadataIterator&);
