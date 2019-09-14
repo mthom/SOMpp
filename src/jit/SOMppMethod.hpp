@@ -110,6 +110,8 @@ public:
         void defineFunction(const char*);
         virtual bool RequestFunction(const char* name);
   
+        static uint64_t assumptionID;
+
 protected:
         std::set<std::string> _functionsAdded;
   

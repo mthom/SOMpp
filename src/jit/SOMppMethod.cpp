@@ -82,6 +82,8 @@
 #undef SOM_METHOD_DEBUG
 #endif
 
+uint64_t SOMppMethod::assumptionID = 0;
+
 class SOMppVMState : public OMR::JitBuilder::VirtualMachineState
    {
    public:
@@ -696,6 +698,8 @@ SOMppMethod::doPushArgument(OMR::JitBuilder::BytecodeBuilder *builder, long byte
 #if SOM_METHOD_DEBUG
 	fprintf(stderr, " %d %d ", index, level);
 #endif
+
+	
 	OMR::JitBuilder::IlValue *arguments = nullptr;
 	// arguments : ppInt64
 	if (0 == level) {
@@ -830,11 +834,8 @@ void
 SOMppMethod::doSend(OMR::JitBuilder::BytecodeBuilder *lookup, OMR::JitBuilder::BytecodeBuilder **bytecodeBuilderTable,
 		    long bytecodeIndex, OMR::JitBuilder::BytecodeBuilder *fallThrough)
 {
-        static uint64_t assumptionID = 0;
 	VMSymbol* signature = static_cast<VMSymbol*>(method->GetConstant(bytecodeIndex));
 	int numOfArgs = Signature::GetNumberOfArguments(signature);
-
-	assumptionID++;
 
 	uint8_t code = method->bytecodes[bytecodeIndex+10];
 
@@ -843,6 +844,8 @@ SOMppMethod::doSend(OMR::JitBuilder::BytecodeBuilder *lookup, OMR::JitBuilder::B
 #endif
 
 	//	INLINE_STATUS status = doInlineIfPossible(&builder, &genericSend, &merge, signature, bytecodeIndex);
+
+	COMMIT(lookup);
 
 	lookup->Store("receiverClass",
 	lookup->	Call("getClass", 1, PICK(lookup, numOfArgs - 1)));
@@ -864,8 +867,6 @@ SOMppMethod::doSend(OMR::JitBuilder::BytecodeBuilder *lookup, OMR::JitBuilder::B
 	OMR::JitBuilder::BytecodeBuilder *fastPath = NULL;
 	OMR::JitBuilder::BytecodeBuilder *merge = NULL;
 
-	COMMIT(lookup);
-
 	lookup->Store("card",
 	lookup->      Call("getInvokableCard", 1,
 			   inv));
@@ -884,8 +885,6 @@ SOMppMethod::doSend(OMR::JitBuilder::BytecodeBuilder *lookup, OMR::JitBuilder::B
         fastPath->           ConstInt64(bytecodeIndex)));
 
 	fastPath->Goto(&merge);
-
-	COMMIT(lookup);
 
 	lookup->Store("code",
 	lookup->      Call("selectorMismatchHandler", 2,
@@ -907,7 +906,7 @@ SOMppMethod::doSend(OMR::JitBuilder::BytecodeBuilder *lookup, OMR::JitBuilder::B
 	patcher->Goto(lookup);
 
 	// going to call out of line helper so commit the stack
-	COMMIT(lookup);
+	// COMMIT(lookup);
 
 	// invokable : Int64
 	lookup->Store("invokable",
@@ -956,6 +955,8 @@ SOMppMethod::doSend(OMR::JitBuilder::BytecodeBuilder *lookup, OMR::JitBuilder::B
 	PUSH(merge, merge->Load("sendResult"));
 
 	merge->AddFallThroughBuilder(fallThrough);
+	
+	assumptionID++;
 }
 
 void

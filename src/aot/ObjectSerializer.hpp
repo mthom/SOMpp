@@ -29,6 +29,15 @@ public:
     ObjectSerializer(BufferWriter* bufferWriter)
         : bufferWriter(bufferWriter)
     {}
+
+    ObjectSerializer(std::set<ItemHeader>&& seenAddresses, BufferWriter* writer)
+        : seenAddresses(std::move(seenAddresses))
+	, bufferWriter(writer)
+    {}
+
+    std::set<ItemHeader>&& takeSeenAddresses() {
+        return std::move(seenAddresses);
+    }
   
     void operator()(VMClass*) override;
     void operator()(VMObject*, long numberOfNonIntrinsicFields = 0) override;
@@ -47,7 +56,7 @@ public:
 private:
     void serializeAndWrite(vm_oop_t obj);
 
-    inline bool checkForSeenAddress(ItemHeader::ItemDesc desc, gc_oop_t obj) {
+    bool checkForSeenAddress(ItemHeader::ItemDesc desc, gc_oop_t obj) {
         AbstractVMObject* vm_obj = dynamic_cast<AbstractVMObject*>(load_ptr(obj));
 
 	if (vm_obj == nullptr)

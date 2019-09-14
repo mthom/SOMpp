@@ -30,6 +30,11 @@ inline void read_direct(T* sink, T source)
    *const_cast<unconst_T*>(sink) = source;
 }
 
+ObjectDeserializer::~ObjectDeserializer()
+{
+   CardDealer::SetCard(card + 1);
+}
+
 void ObjectDeserializer::eraseAllSubObjectsAtAddress(AbstractVMObject* obj)
 {
    // size doesn't affect lookup, so it can be ignored as part of the key.
@@ -134,6 +139,12 @@ GCClass* ObjectDeserializer::createClass(MetadataIterator& it)
 {
    auto header = it.header();
 
+   // sometimes, this happens. SOM will fudge certain classes as objects, as in the case
+   // of nilObject / nilClass.
+   if (header.desc == ItemHeader::object) {
+      return static_cast<GCClass*>(createObject(it, VMClass::VMObjectNumberOfFields));
+   }
+
    it += sizeof(ItemHeader);
 
    if (auto obj = isSeenObject(header); obj) {
@@ -150,12 +161,14 @@ GCClass* ObjectDeserializer::createClass(MetadataIterator& it)
    eraseAllSubObjectsAtAddress(obj);   
 
    clazz->AssignObject(*obj, VMClass::VMClassNumberOfFields);
-
+     
    read_direct(&clazz->superClass, createClass(it));
    read_direct(&clazz->name, createSymbol(it));
    
    read_direct(&clazz->instanceFields, createArray(it));
    read_direct(&clazz->instanceInvokables, createArray(it));
+
+   classes.push_back(clazz);
 
    return _store_ptr(clazz);
 }
@@ -416,18 +429,19 @@ GCSymbol* ObjectDeserializer::createSymbol(MetadataIterator& it)
    VMString* str = load_ptr(createString(it));   
    eraseAllSubObjectsAtAddress(str);
 
-   auto* universe = GetUniverse();
-   VMSymbol* s = universe->NewSymbol(str->chars);
+   int numberOfArgumentsOfSignature;
+   uint64_t recordedCard;
+
+   read(&numberOfArgumentsOfSignature, *it);
+   it += sizeof(numberOfArgumentsOfSignature);
+
+   read(&recordedCard, *it);
+   it += sizeof(recordedCard);
+
+   VMSymbol* s = GetUniverse()->NewSymbol(str->chars, numberOfArgumentsOfSignature, recordedCard);
 
    oldNewAddresses[header] = s;
-
-   read(&s->numberOfArgumentsOfSignature, *it);
-   it += sizeof(s->numberOfArgumentsOfSignature);
-
-   read(&s->card, *it);
-   it += sizeof(s->card);
-
-   card = std::max(card, s->card);
+   card = std::max(recordedCard, card);
 
    return _store_ptr(s);
 }

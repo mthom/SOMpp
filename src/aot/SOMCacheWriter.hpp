@@ -61,10 +61,14 @@ public:
        std::copy(bytecodes, bytecodes + length, std::back_inserter(contents));
     }
 
-    void flushToCache() {
+    void flushToPreludeArea() {
        cache->copyPreludeBuffer(contents.data(), contents.size());
     }
-  
+
+    void flushToMetadataArea() {
+       cache->copyMetadata(contents.data(), contents.size());
+    }
+
 private:
     template <typename T>
     void _write(T item) {

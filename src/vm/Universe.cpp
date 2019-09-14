@@ -318,7 +318,8 @@ void Universe::printUsageAndExit(char* executable) const {
     Quit(ERR_SUCCESS);
 }
 
-Universe::Universe() {
+Universe::Universe()
+{
     interpreter = nullptr;
 }
 
@@ -332,9 +333,11 @@ VMMethod* Universe::createBootstrapMethod(VMClass* holder, long numArgsOfMsgSend
 }
 
 #if GC_TYPE == OMR_GARBAGE_COLLECTION
-void Universe::compileAOTMethods() {
+void Universe::compileAOTMethods(TR::SharedCache* cache) {
    uint32_t rc = 0;
    void *entry = nullptr;
+
+   SOMppMethod::assumptionID = cache->lastAssumptionID();
 
    for (auto& methodStub : aotMethodQueue) {
      std::string methodName(methodStub->GetHolder()->GetName()->GetChars());
@@ -355,6 +358,8 @@ void Universe::compileAOTMethods() {
        }
      }
    }
+
+   cache->setLastAssumptionID(SOMppMethod::assumptionID);
 }
 
 int Universe::jitCompilationEntryPoint(void *arg) {
@@ -564,7 +569,7 @@ void Universe::initialize(long _argc, char** _argv) {
       GetUniverse()->Quit(-1);
     }
 
-    TR::SharedCache* sharedCache = TR::Compiler->aotAdapter.getSharedCache();      
+    TR::SharedCache* sharedCache = TR::Compiler->aotAdapter.getSharedCache();
 
     VMObject* systemObject = sharedCache->createdNewCache() ? InitializeGlobals() : InitializeFromCache();
     VMMethod* bootstrapMethod = createBootstrapMethod(load_ptr(systemClass), 2);
@@ -729,7 +734,7 @@ Universe::~Universe() {
     }
 #endif
 
-void Universe::saveToSOMCache()
+void Universe::savePreludeToSOMCache()
 {
    TR::SharedCache* sharedCache = TR::Compiler->aotAdapter.getSharedCache();
 
@@ -765,7 +770,9 @@ void Universe::saveToSOMCache()
    load_ptr(symbolIfTrue)->visit(serializer);
    load_ptr(symbolIfFalse)->visit(serializer);
 
-   writer.flushToCache();
+   writer.flushToPreludeArea();
+
+   seenAddresses = serializer.takeSeenAddresses();
 }
 
 VMObject* Universe::InitializeGlobals() {
@@ -872,8 +879,8 @@ VMObject* Universe::InitializeGlobals() {
     enqueueAOTMethods(load_ptr(trueClass));
     enqueueAOTMethods(load_ptr(falseClass));
 
-    saveToSOMCache();
-    compileAOTMethods();
+    savePreludeToSOMCache();
+    compileAOTMethods(TR::Compiler->aotAdapter.getSharedCache());
 
     return systemObject;
 }
@@ -904,7 +911,7 @@ VMObject* Universe::InitializeFromCache()
     symbolClass     = (GCClass*) deserialize(it);
     primitiveClass  = (GCClass*) deserialize(it);
     stringClass     = (GCClass*) deserialize(it);
-    
+
     systemClass     = (GCClass*) deserialize(it);
     blockClass      = (GCClass*) deserialize(it);
     doubleClass     = (GCClass*) deserialize(it);
@@ -918,7 +925,7 @@ VMObject* Universe::InitializeFromCache()
 
     const auto* map = deserialize.GetAddressOfOldNewAddresses();
     TR::Compiler->aotAdapter.setOldNewAddressesMap(map);
-    
+
     obtain_vtables_of_known_classes(load_ptr(nilClass)->GetName());
 
     SetGlobal(load_ptr(objectClass)->GetName(), load_ptr(objectClass));
@@ -979,30 +986,26 @@ VMObject* Universe::InitializeFromCache()
     enqueueAOTMethods(load_ptr(blockClass));
     enqueueAOTMethods(load_ptr(systemClass));
 
-    /*
-    // ackshually, this should be a separate region! If you want to be assured
-    // of where the additional metadata is, I mean.
+    it = cache->constructMetadataSectionEntryIterator();
+
     while(true) {
-       SOMCacheMetadataEntryDescriptor descriptor = it.next();
+       auto object = reinterpret_cast<vm_oop_t>(deserialize(it));
 
-       if(descriptor) {
-	   auto object = reinterpret_cast<vm_oop_t>(deserialize(it));
-
-	   if (object == nullptr)
-	      break;
-
-	   if (auto clazz = dynamic_cast<VMClass*>(object)) {
-	      SetGlobal(clazz->GetName(), clazz);
-	      LoadPrimitives(clazz);
-	      enqueueAOTMethods(clazz);
-	   }
-       } else {
-	   break;
-       }
+       if (object == nullptr)
+	  break;
     }
-    */
-    
-    compileAOTMethods();
+
+    for(auto* clazz : deserialize.GetPreprocessedClasses()) {
+       SetGlobal(clazz->GetName(), clazz);
+       LoadPrimitives(clazz);
+       enqueueAOTMethods(clazz);
+    }
+
+    compileAOTMethods(cache);
+
+    for(auto pair : deserialize.GetOldNewAddresses()) {
+       seenAddresses.insert(pair.first);
+    }
 
     return systemObject;
 }
@@ -1088,6 +1091,19 @@ VMClass* superClass, const char* name) {
     sysClassClass->SetName(SymbolFor(classClassName));
 
     SetGlobal(systemClass->GetName(), systemClass);
+}
+
+void Universe::WriteClassToSOMCache(VMClass* clazz)
+{
+   TR::SharedCache* sharedCache = TR::Compiler->aotAdapter.getSharedCache();
+
+   SOMCacheWriter writer(sharedCache);
+   ObjectSerializer serializer(std::move(seenAddresses), &writer);
+
+   clazz->visit(serializer);
+   writer.flushToMetadataArea();
+
+   seenAddresses = serializer.takeSeenAddresses();
 }
 
 VMClass* Universe::LoadClass(VMSymbol* name) {
@@ -1450,6 +1466,15 @@ VMSymbol* Universe::NewSymbol(const char* str) {
     return result;
 }
 
+VMSymbol* Universe::NewSymbol(const char* str, int numberOfArgumentsOfSignature, uint64_t card) {
+    VMSymbol* result = new (GetHeap<HEAP_CLS>(), PADDED_SIZE(strlen(str)+1)) VMSymbol(str, numberOfArgumentsOfSignature, card);
+    //# warning is _store_ptr sufficient here?
+    symbolsMap[str] = _store_ptr(result);
+
+    LOG_ALLOCATION("VMSymbol", result->GetObjectSize());
+    return result;
+}
+
 VMClass* Universe::NewSystemClass() const {
     VMClass* systemClass = new (GetHeap<HEAP_CLS>()) VMClass();
 
@@ -1465,11 +1490,12 @@ VMClass* Universe::NewSystemClass() const {
 void Universe::enqueueAOTMethods(VMClass* clazz) {
    for(long i = 0; i < clazz->GetNumberOfInstanceInvokables(); ++i) {
      auto* invokable = clazz->GetInstanceInvokable(i);
-     
+
      if (auto* method = dynamic_cast<VMMethod*>(invokable)) {
-        if (aotMethodQueue.find(method) == aotMethodQueue.end()) {
-	   aotMethodQueue.insert(method);
-	}
+       if (aotMethodsRecorded.find(method) == aotMethodsRecorded.end()) {
+	  aotMethodQueue.push_back(method);
+	  aotMethodsRecorded.insert(method);
+       }
      }
    }
 }

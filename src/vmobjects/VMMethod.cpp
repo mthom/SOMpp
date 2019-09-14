@@ -160,13 +160,13 @@ void VMMethod::Invoke(Interpreter* interp, VMFrame* frame) {
     VMFrame* frm = interp->PushNewFrame(this);
     frm->CopyArgumentsFrom(frame);
 
+    cout << "invoking " << GetSignature()->GetChars() << "\n";
+    
 #if GC_TYPE == OMR_GARBAGE_COLLECTION
-	if(allowedInvocations < 3 && NULL != compiledMethod) {
+        if(NULL != compiledMethod) {//allowedInvocations < 3 && NULL != compiledMethod) {
 	  frm->SetIsJITFrame(true);
 	  allowedInvocations++;
-	  std::cout << "executing " << GetSignature()->GetChars() << "\n";
 	  compiledMethod((int64_t*)interp, frm);
-	  std::cout << "finished executing " << GetSignature()->GetChars() << "\n";
 	} else if (invokedCount > 0) {
 		if (0 == --invokedCount) {
 			if (enableJIT) {
