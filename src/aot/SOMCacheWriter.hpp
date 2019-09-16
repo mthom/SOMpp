@@ -19,6 +19,7 @@ public:
 
     void writeHeader(SOMCacheMetadataItemHeader header)
     {
+        TR_ASSERT(header.obj_id != NULL, "obj_id in ItemHeader cannot be NULL");
         _write<SOMCacheMetadataItemHeader>(header);
     }
 
