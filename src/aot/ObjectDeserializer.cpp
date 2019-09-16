@@ -38,18 +38,18 @@ ObjectDeserializer::~ObjectDeserializer()
 void ObjectDeserializer::eraseAllSubObjectsAtAddress(AbstractVMObject* obj)
 {
    // size doesn't affect lookup, so it can be ignored as part of the key.
-   oldNewAddresses.erase(ItemHeader { ItemHeader::object, obj, 0 });
-   oldNewAddresses.erase(ItemHeader { ItemHeader::array, obj, 0 });
-   oldNewAddresses.erase(ItemHeader { ItemHeader::num_integer, obj, 0 });
-   oldNewAddresses.erase(ItemHeader { ItemHeader::block, obj, 0 });
-   oldNewAddresses.erase(ItemHeader { ItemHeader::clazz, obj, 0 });
-   oldNewAddresses.erase(ItemHeader { ItemHeader::num_double, obj, 0 });
-   oldNewAddresses.erase(ItemHeader { ItemHeader::eval_prim, obj, 0 });
-   oldNewAddresses.erase(ItemHeader { ItemHeader::frame, obj, 0 });
-   oldNewAddresses.erase(ItemHeader { ItemHeader::method, obj, 0 });
-   oldNewAddresses.erase(ItemHeader { ItemHeader::prim, obj, 0 });
-   oldNewAddresses.erase(ItemHeader { ItemHeader::vm_string, obj, 0 });
-   oldNewAddresses.erase(ItemHeader { ItemHeader::symbol, obj, 0 });
+   oldNewAddresses.erase({ ItemHeader::object, obj, 0 });
+   oldNewAddresses.erase({ ItemHeader::array, obj, 0 });
+   oldNewAddresses.erase({ ItemHeader::num_integer, obj, 0 });
+   oldNewAddresses.erase({ ItemHeader::block, obj, 0 });
+   oldNewAddresses.erase({ ItemHeader::clazz, obj, 0 });
+   oldNewAddresses.erase({ ItemHeader::num_double, obj, 0 });
+   oldNewAddresses.erase({ ItemHeader::eval_prim, obj, 0 });
+   oldNewAddresses.erase({ ItemHeader::frame, obj, 0 });
+   oldNewAddresses.erase({ ItemHeader::method, obj, 0 });
+   oldNewAddresses.erase({ ItemHeader::prim, obj, 0 });
+   oldNewAddresses.erase({ ItemHeader::vm_string, obj, 0 });
+   oldNewAddresses.erase({ ItemHeader::symbol, obj, 0 });
 }
 
 gc_oop_t ObjectDeserializer::operator()(MetadataIterator& it)
@@ -132,6 +132,8 @@ GCObject* ObjectDeserializer::createObject(MetadataIterator& it, long numberOfIn
       read_direct(offset, static_cast<GCObject*>((*this)(it)));
    }
 
+   reverseLookupMap[obj] = header.obj_id;
+   
    return _store_ptr(obj);
 }
 
@@ -170,6 +172,8 @@ GCClass* ObjectDeserializer::createClass(MetadataIterator& it)
 
    classes.push_back(clazz);
 
+   reverseLookupMap[clazz] = header.obj_id;
+
    return _store_ptr(clazz);
 }
 
@@ -204,6 +208,8 @@ GCArray* ObjectDeserializer::createArray(MetadataIterator& it)
       read_direct(offset, static_cast<GCObject*>((*this)(it)));
    }
 
+   reverseLookupMap[array] = header.obj_id;
+
    return _store_ptr(array);
 }
 
@@ -227,6 +233,8 @@ GCBlock* ObjectDeserializer::createBlock(MetadataIterator& it)
 
    oldNewAddresses[header] = block;
 
+   reverseLookupMap[block] = header.obj_id;
+
    return _store_ptr(block);
 }
 
@@ -247,6 +255,8 @@ GCDouble* ObjectDeserializer::createDouble(MetadataIterator& it)
    read(&dbl->embeddedDouble, *it);
    it += sizeof(dbl->embeddedDouble);
 
+   reverseLookupMap[dbl] = header.obj_id;
+
    return _store_ptr(dbl);
 }
 
@@ -266,6 +276,8 @@ GCInteger* ObjectDeserializer::createInteger(MetadataIterator& it)
    read(&integer->embeddedInteger, *it);
    it += sizeof(integer->embeddedInteger);
 
+   reverseLookupMap[integer] = header.obj_id;
+   
    return _store_ptr(integer);
 }
 
@@ -297,6 +309,8 @@ GCPrimitive* ObjectDeserializer::createPrimitive(MetadataIterator& it)
 
    read(&prim->empty, *it);
    it += sizeof(prim->empty);
+
+   reverseLookupMap[prim] = header.obj_id;
 
    return _store_ptr(prim);
 }
@@ -335,6 +349,8 @@ GCEvaluationPrimitive* ObjectDeserializer::createEvaluationPrimitive(MetadataIte
 
    read(&prim->empty, *it);
    it += sizeof(prim->empty);
+
+   reverseLookupMap[prim] = header.obj_id;
 
    return _store_ptr(prim);
 }
@@ -383,6 +399,8 @@ GCMethod* ObjectDeserializer::createMethod(MetadataIterator& it)
    std::memcpy(method->bytecodes, *it, bcLength->GetEmbeddedInteger());
    it += bcLength->GetEmbeddedInteger();   
 
+   reverseLookupMap[method] = header.obj_id;
+
    return _store_ptr(method);
 }
 
@@ -412,6 +430,8 @@ GCString* ObjectDeserializer::createString(MetadataIterator& it)
 
    VMString* s = new (GetHeap<HEAP_CLS>(), additionalBytes) VMString(chars);
    oldNewAddresses[header] = s;
+
+   reverseLookupMap[s] = header.obj_id;
    
    return _store_ptr(s);
 }
@@ -442,6 +462,8 @@ GCSymbol* ObjectDeserializer::createSymbol(MetadataIterator& it)
 
    oldNewAddresses[header] = s;
    card = std::max(recordedCard, card);
+
+   reverseLookupMap[s] = header.obj_id;
 
    return _store_ptr(s);
 }

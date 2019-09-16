@@ -55,7 +55,7 @@ struct SOM_VM;
 extern short dumpBytecodes;
 extern short gcVerbosity;
 #if GC_TYPE == OMR_GARBAGE_COLLECTION
-class SOMCacheMetadataItemHeader;
+struct SOMCacheMetadataItemHeader;
 extern bool enableJIT;
 #endif
 
@@ -189,7 +189,7 @@ private:
     void initialize(long, char**);
 
     void enqueueAOTMethods(VMClass*);
-    void compileAOTMethods(TR::SharedCache*);
+    void compileAOTMethods();
     
 #if GC_TYPE == OMR_GARBAGE_COLLECTION
     static int jitCompilationEntryPoint(void *arg);

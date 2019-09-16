@@ -32,6 +32,10 @@ public:
         return classes;
     }
 
+    auto* GetAddressOfReverseLookupMap() {
+        return &reverseLookupMap;
+    }
+
     void resetAddressMap() {
         oldNewAddresses.clear();
     }
@@ -55,6 +59,7 @@ private:
 
 private:
     std::map<ItemHeader, AbstractVMObject*> oldNewAddresses;
+    std::map<AbstractVMObject*, AbstractVMObject*> reverseLookupMap; // reverse lookup for relocations.
     std::vector<VMClass*> classes;
     uint64_t card = 0;
 };

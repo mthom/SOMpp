@@ -26,8 +26,8 @@
  THE SOFTWARE.
  */
 
-#include <misc/defs.h>
-#include <vmobjects/ObjectFormats.h>
+#include "../src/misc/defs.h"
+#include "../src/vmobjects/ObjectFormats.h"
 
 class Interpreter {
 	friend class SOMppMethod;

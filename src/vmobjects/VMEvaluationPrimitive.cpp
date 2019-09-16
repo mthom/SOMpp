@@ -101,8 +101,6 @@ void EvaluationRoutine::Invoke(Interpreter* interp, VMFrame* frame) {
     long numArgs = prim->GetNumberOfArguments();
     VMBlock* block = static_cast<VMBlock*>(frame->GetStackElement(numArgs - 1));
 
-    cout << "invoking a block " << block->GetMethod()->GetSignature()->GetChars() << "\n";
-
     // Get the context of the block...
     VMFrame* context = block->GetContext();
 //    fprintf(stderr, "context %p\n", context);

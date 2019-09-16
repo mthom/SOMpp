@@ -333,10 +333,11 @@ VMMethod* Universe::createBootstrapMethod(VMClass* holder, long numArgsOfMsgSend
 }
 
 #if GC_TYPE == OMR_GARBAGE_COLLECTION
-void Universe::compileAOTMethods(TR::SharedCache* cache) {
+void Universe::compileAOTMethods() {
    uint32_t rc = 0;
    void *entry = nullptr;
 
+   auto* cache = TR::Compiler->aotAdapter.getSharedCache();
    SOMppMethod::assumptionID = cache->lastAssumptionID();
 
    for (auto& methodStub : aotMethodQueue) {
@@ -880,11 +881,10 @@ VMObject* Universe::InitializeGlobals() {
     enqueueAOTMethods(load_ptr(falseClass));
 
     savePreludeToSOMCache();
-    compileAOTMethods(TR::Compiler->aotAdapter.getSharedCache());
+    compileAOTMethods();
 
     return systemObject;
 }
-
 
 VMObject* Universe::InitializeFromCache()
 {
@@ -923,8 +923,11 @@ VMObject* Universe::InitializeFromCache()
     symbolIfTrue    = (GCSymbol*) deserialize(it);
     symbolIfFalse   = (GCSymbol*) deserialize(it);
 
-    const auto* map = deserialize.GetAddressOfOldNewAddresses();
-    TR::Compiler->aotAdapter.setOldNewAddressesMap(map);
+    const auto* oldNewAddresses = deserialize.GetAddressOfOldNewAddresses();
+    TR::Compiler->aotAdapter.setOldNewAddressesMap(oldNewAddresses);
+
+    const auto* reverseLookup = deserialize.GetAddressOfReverseLookupMap();
+    TR::Compiler->aotAdapter.setReverseLookupMap(reverseLookup);
 
     obtain_vtables_of_known_classes(load_ptr(nilClass)->GetName());
 
@@ -1001,7 +1004,7 @@ VMObject* Universe::InitializeFromCache()
        enqueueAOTMethods(clazz);
     }
 
-    compileAOTMethods(cache);
+    compileAOTMethods();
 
     for(auto pair : deserialize.GetOldNewAddresses()) {
        seenAddresses.insert(pair.first);

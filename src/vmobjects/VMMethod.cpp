@@ -160,8 +160,6 @@ void VMMethod::Invoke(Interpreter* interp, VMFrame* frame) {
     VMFrame* frm = interp->PushNewFrame(this);
     frm->CopyArgumentsFrom(frame);
 
-    cout << "invoking " << GetSignature()->GetChars() << "\n";
-    
 #if GC_TYPE == OMR_GARBAGE_COLLECTION
         if(NULL != compiledMethod) {//allowedInvocations < 3 && NULL != compiledMethod) {
 	  frm->SetIsJITFrame(true);

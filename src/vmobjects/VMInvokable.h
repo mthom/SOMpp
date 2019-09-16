@@ -47,6 +47,10 @@ public:
 
     VMInvokable(long nof = 0);
 
+    virtual bool HasCompiledMethod() const {
+      return false;
+    }
+    
     virtual void visit(SOMObjectVisitor& visitor) {
         visitor(this);
     }

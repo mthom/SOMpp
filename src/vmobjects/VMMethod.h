@@ -95,6 +95,10 @@ public:
 #endif
 
 public:
+   bool HasCompiledMethod() const {
+       return compiledMethod != NULL;     
+   }
+   
    std::vector<fomrobject_t*> GetFieldPtrs() {
      std::vector<fomrobject_t*> fields{VMInvokable::GetFieldPtrs()};
 

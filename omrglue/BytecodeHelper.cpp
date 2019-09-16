@@ -88,6 +88,8 @@ BytecodeHelper::getGlobal(int64_t interp, int64_t framePtr, int64_t receiverPtr,
         VMSymbol *symbol = reinterpret_cast<VMSymbol*>(globalNamePtr);
 	VMFrame* frame = reinterpret_cast<VMFrame*>(framePtr);
 
+	Universe::IsValidObject(symbol);
+
 	vm_oop_t result = GetUniverse()->GetGlobal(symbol);
 
 	if (result == nullptr) {
@@ -105,10 +107,11 @@ BytecodeHelper::getGlobal(int64_t interp, int64_t framePtr, int64_t receiverPtr,
 	     interpreter->SetFrame(VMFrame::EmergencyFrameFrom(interpreter->GetFrame(), additionalStackSlots));
 	   }
 
-	   AS_OBJ(self)->Send(interpreter, "unknownGlobal:", arguments, 1);
-	   //	Interpreter::runInterpreterLoop(interpreter);
-	   //	
-	   //
+	   bool ranCompiled = AS_OBJ(self)->Send(interpreter, "unknownGlobal:", arguments, 1);
+	   if (!ranCompiled) {
+	      Interpreter::runInterpreterLoop(interpreter);
+	   }
+
 	   if (frame != interpreter->GetFrame()) {
 	     printf("Came back from a doesNotUnderstand and the frame was grown!!\n");
 	     /* TODO replace with a runtime assert */
@@ -214,13 +217,17 @@ BytecodeHelper::doSendIfRequired(int64_t* interp, VMFrame* frame, int64_t invoka
 			interpreter->SetFrame(VMFrame::EmergencyFrameFrom(frame, additionalStackSlots));
 		}
 
-		AS_OBJ(receiver)->Send(interpreter, "doesNotUnderstand:arguments:", arguments, 2);
-		Interpreter::runInterpreterLoop(interpreter);
+		bool ranCompiled = AS_OBJ(receiver)->Send(interpreter, "doesNotUnderstand:arguments:", arguments, 2);
+		
+		if (!ranCompiled) {
+		      Interpreter::runInterpreterLoop(interpreter);
+		}
+
 		if (frame != interpreter->GetFrame()) {
-			printf("Came back from a doesNotUnderstand and the frame was grown!!\n");
-			/* TODO replace with a runtime assert */
-			int *x = 0;
-			*x = 0;
+		  printf("Came back from a doesNotUnderstand and the frame was grown!!\n");
+		  /* TODO replace with a runtime assert */
+		  int *x = 0;
+		  *x = 0;
 		}
 	} else {
 		invokable->Invoke(interpreter, frame);

@@ -42,7 +42,8 @@ public:
     virtual size_t GetHash();
     virtual VMClass* GetClass() const = 0;
     virtual AbstractVMObject* Clone() const = 0;
-    virtual void Send(Interpreter*, StdString, vm_oop_t*, long);
+    // returns true to indicate that the found invokable is compiled.
+    virtual bool Send(Interpreter*, StdString, vm_oop_t*, long);
     
     virtual void MarkObjectAsInvalid() = 0;
     

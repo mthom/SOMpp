@@ -895,7 +895,7 @@ SOMppMethod::doSend(OMR::JitBuilder::BytecodeBuilder *lookup, OMR::JitBuilder::B
 
 	lookup->IfCmpNotEqual(&patcher,
 	lookup->              Load("code"),
-        lookup->              ConstInt64(-1)); //TODO: relocate signature!
+        lookup->              ConstInt64(-1));
 
 	COMMIT(patcher);
 
@@ -1129,6 +1129,8 @@ SOMppMethod::pushConstant(OMR::JitBuilder::BytecodeBuilder *builder, VMMethod *v
 void
 SOMppMethod::pushGlobal(OMR::JitBuilder::BytecodeBuilder *builder, VMSymbol* globalName)
 {
+        COMMIT(builder);
+
         // global : pInt64
 //      OMR::JitBuilder::IlValue *global =
         builder->Call("getGlobal", 4,
