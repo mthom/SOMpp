@@ -14,12 +14,35 @@ using ItemHeader = SOMCacheMetadataItemHeader;
 
 class ObjectDeserializer {
 public:
+    virtual ~ObjectDeserializer();
+
     gc_oop_t operator()(MetadataIterator&);
 
     uint64_t getMaxCard() { return card; }
 
+    std::map<ItemHeader, AbstractVMObject*>* GetAddressOfOldNewAddresses() {
+        return &oldNewAddresses;
+    }
+
+    std::map<ItemHeader, AbstractVMObject*>& GetOldNewAddresses() {
+        return oldNewAddresses;
+    }
+
+    const std::vector<VMClass*>& GetPreprocessedClasses() const {
+        return classes;
+    }
+
+    auto* GetAddressOfReverseLookupMap() {
+        return &reverseLookupMap;
+    }
+
+    void resetAddressMap() {
+        oldNewAddresses.clear();
+    }
+
 private:
     gc_oop_t isSeenObject(const ItemHeader&);
+    void eraseAllSubObjectsAtAddress(AbstractVMObject*);
 
     GCObject* createObject(MetadataIterator&, long numberOfIntrinsicFields = 0);
     GCArray* createArray(MetadataIterator&);
@@ -36,5 +59,7 @@ private:
 
 private:
     std::map<ItemHeader, AbstractVMObject*> oldNewAddresses;
+    std::map<AbstractVMObject*, AbstractVMObject*> reverseLookupMap; // reverse lookup for relocations.
+    std::vector<VMClass*> classes;
     uint64_t card = 0;
 };

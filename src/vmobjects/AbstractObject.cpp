@@ -20,7 +20,8 @@ size_t AbstractVMObject::GetHash() {
     return (size_t) this;
 }
 
-void AbstractVMObject::Send(Interpreter* interp, StdString selectorString, vm_oop_t* arguments, long argc) {
+// returns true if the invokable is compiled, meaning that invocation is immediate.
+bool AbstractVMObject::Send(Interpreter* interp, StdString selectorString, vm_oop_t* arguments, long argc) {
     VMFrame* frame = interp->GetFrame();
     VMSymbol* selector = GetUniverse()->SymbolFor(selectorString);
     frame->Push(this);
@@ -32,6 +33,8 @@ void AbstractVMObject::Send(Interpreter* interp, StdString selectorString, vm_oo
     VMClass* cl = GetClass();
     VMInvokable* invokable = cl->LookupInvokable(selector);
     invokable->Invoke(interp, frame);
+
+    return invokable->HasCompiledMethod();
 }
 
 long AbstractVMObject::GetFieldIndex(VMSymbol* fieldName) const {

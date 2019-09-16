@@ -1,20 +1,29 @@
 #pragma once
 
+#include <memory>
+
 #include "../vmobjects/VMMethod.h"
 #include "../vmobjects/VMObjectBase.h"
 
-uint64_t NewCard();
-void SetCard(uint64_t);
-
-class CardManager {
-public:
-   static CardManager instance;
-
-   void SetCard(uint64_t card_) { card = card_; }
-   uint64_t NewCard();
-protected:
-   CardManager() : card(0) {}
+class CardDealer
+{
+private:
    uint64_t card;
+   static std::unique_ptr<CardDealer> dealer;
+
+   CardDealer() : card(0) {}
+
+public:
+   static CardDealer& instance();
+
+   static uint64_t GetNewCard(const char* symbol) {
+      return instance().card++;
+   }
+
+   static void SetCard(uint64_t newCard) {
+      if (newCard > instance().card)
+         instance().card = newCard;
+   }
 };
 
 template <std::size_t N>

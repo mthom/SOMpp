@@ -13,8 +13,8 @@ public:
         : cache(cache)
     {
         // the prelude without compiled methods or relocations is
-        // about 64 bytes in size.
-        contents.reserve(64 * 1024);
+        // about 98 bytes in size.
+        contents.reserve(99 * 1024);
     }
 
     void writeHeader(SOMCacheMetadataItemHeader header)
@@ -61,10 +61,14 @@ public:
        std::copy(bytecodes, bytecodes + length, std::back_inserter(contents));
     }
 
-    void flushToCache() {
-       cache->copyMetadataBuffer(contents.data(), contents.size());
+    void flushToPreludeArea() {
+       cache->copyPreludeBuffer(contents.data(), contents.size());
     }
-  
+
+    void flushToMetadataArea() {
+       cache->copyMetadata(contents.data(), contents.size());
+    }
+
 private:
     template <typename T>
     void _write(T item) {

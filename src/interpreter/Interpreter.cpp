@@ -700,8 +700,13 @@ void Interpreter::doReturnNonLocal() {
             // copy current frame into a bigger one, and replace it
             SetFrame(VMFrame::EmergencyFrameFrom(GetFrame(), additionalStackSlots));
         }
-
+	
         AS_OBJ(sender)->Send(this, escapedBlock, arguments, 1);
+
+	if (GetFrame()->GetIsJITFrame()) {
+	   IncrementReturnCount();
+	}
+
         return;
     }
 

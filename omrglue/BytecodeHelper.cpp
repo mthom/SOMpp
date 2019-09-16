@@ -81,12 +81,14 @@ BytecodeHelper::getSuperClass(int64_t object)
 }
 
 void
-BytecodeHelper::getGlobal(int64_t interp, int64_t framePtr, int64_t receiverPtr, int64_t globalNamePtr)
+BytecodeHelper::getGlobal(int64_t interp, int64_t framePtr, int64_t receiverPtr, int64_t* globalNamePtr)
 {
 #define VALUE_FOR_GET_GLOBAL_LINE LINETOSTR(__LINE__)
 	//fprintf(stderr, "get global type %p\n", symbol);
         VMSymbol *symbol = reinterpret_cast<VMSymbol*>(globalNamePtr);
 	VMFrame* frame = reinterpret_cast<VMFrame*>(framePtr);
+
+	Universe::IsValidObject(symbol);
 
 	vm_oop_t result = GetUniverse()->GetGlobal(symbol);
 
@@ -105,10 +107,11 @@ BytecodeHelper::getGlobal(int64_t interp, int64_t framePtr, int64_t receiverPtr,
 	     interpreter->SetFrame(VMFrame::EmergencyFrameFrom(interpreter->GetFrame(), additionalStackSlots));
 	   }
 
-	   AS_OBJ(self)->Send(interpreter, "unknownGlobal:", arguments, 1);
-	   //	Interpreter::runInterpreterLoop(interpreter);
-	   //	
-	   //
+	   bool ranCompiled = AS_OBJ(self)->Send(interpreter, "unknownGlobal:", arguments, 1);
+	   if (!ranCompiled) {
+	      Interpreter::runInterpreterLoop(interpreter);
+	   }
+
 	   if (frame != interpreter->GetFrame()) {
 	     printf("Came back from a doesNotUnderstand and the frame was grown!!\n");
 	     /* TODO replace with a runtime assert */
@@ -121,7 +124,7 @@ BytecodeHelper::getGlobal(int64_t interp, int64_t framePtr, int64_t receiverPtr,
 }
 
 int64_t
-BytecodeHelper::getNewBlock(VMFrame* frame, int64_t blockMethod, int64_t numOfArgs)
+BytecodeHelper::getNewBlock(VMFrame* frame, int64_t* blockMethod, int64_t numOfArgs)
 {
 #define VALUE_FOR_GET_NEW_BLOCK_LINE LINETOSTR(__LINE__)
 
@@ -182,7 +185,7 @@ BytecodeHelper::getInvokable(int64_t receiverClazz, int64_t* signature)
 }
 
 int64_t
-BytecodeHelper::doSendIfRequired(int64_t* interp, VMFrame* frame, int64_t invokablePtr, int64_t* receiverPtr, int64_t signaturePtr, int64_t bytecodeIndex)
+BytecodeHelper::doSendIfRequired(int64_t* interp, VMFrame* frame, int64_t invokablePtr, int64_t* receiverPtr, int64_t* signaturePtr, int64_t bytecodeIndex)
 {
 #define VALUE_FOR_DO_SEND_IF_REQUIRED_LINE LINETOSTR(__LINE__)
 	//fprintf(stderr, "doSendIf REquired\n");
@@ -214,13 +217,17 @@ BytecodeHelper::doSendIfRequired(int64_t* interp, VMFrame* frame, int64_t invoka
 			interpreter->SetFrame(VMFrame::EmergencyFrameFrom(frame, additionalStackSlots));
 		}
 
-		AS_OBJ(receiver)->Send(interpreter, "doesNotUnderstand:arguments:", arguments, 2);
-		Interpreter::runInterpreterLoop(interpreter);
+		bool ranCompiled = AS_OBJ(receiver)->Send(interpreter, "doesNotUnderstand:arguments:", arguments, 2);
+		
+		if (!ranCompiled) {
+		      Interpreter::runInterpreterLoop(interpreter);
+		}
+
 		if (frame != interpreter->GetFrame()) {
-			printf("Came back from a doesNotUnderstand and the frame was grown!!\n");
-			/* TODO replace with a runtime assert */
-			int *x = 0;
-			*x = 0;
+		  printf("Came back from a doesNotUnderstand and the frame was grown!!\n");
+		  /* TODO replace with a runtime assert */
+		  int *x = 0;
+		  *x = 0;
 		}
 	} else {
 		invokable->Invoke(interpreter, frame);
@@ -352,7 +359,7 @@ BytecodeHelper::allocateVMFrame(int64_t interp, int64_t previousFramePtr, int64_
 }
 
 int64_t
-BytecodeHelper::doSuperSendHelper(int64_t* interp, VMFrame* frame, int64_t signaturePtr, int64_t bytecodeIndex)
+BytecodeHelper::doSuperSendHelper(int64_t* interp, VMFrame* frame, int64_t* signaturePtr, int64_t bytecodeIndex)
 {
 #define VALUE_FOR_DO_SUPER_SEND_HELPER_LINE LINETOSTR(__LINE__)
 	//fprintf(stderr, "doSuperSend\n");

@@ -134,7 +134,6 @@ void EvaluationRoutine::Invoke(Interpreter* interp, VMFrame* frame) {
     if(NULL != vmMethod->compiledMethod) {
     	NewFrame->SetIsJITFrame(true);
 	vmMethod->compiledMethod((int64_t*)interp, NewFrame);
-	cout << "VMEvaluationPrimitive: finished executing compiled method\n";
 	} else if (vmMethod->invokedCount > 0) {
         if (0 == --vmMethod->invokedCount) {
             if (enableJIT) {

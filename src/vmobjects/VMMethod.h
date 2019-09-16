@@ -35,7 +35,7 @@
 #include "vm/Universe.h"
 
 #if GC_TYPE == OMR_GARBAGE_COLLECTION
-#include "../src/jit/SOMppMethod_with_vm_state.hpp"
+#include "../src/jit/SOMppMethod.hpp"
 #endif
 
 // typedef int64_t (SOMppFunctionType)(int64_t* interpreter, VMFrame* frame);
@@ -95,6 +95,10 @@ public:
 #endif
 
 public:
+   bool HasCompiledMethod() const {
+       return compiledMethod != NULL;     
+   }
+   
    std::vector<fomrobject_t*> GetFieldPtrs() {
      std::vector<fomrobject_t*> fields{VMInvokable::GetFieldPtrs()};
 

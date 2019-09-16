@@ -39,11 +39,11 @@ uint64_t VMSymbol::lastUnusedCard = 0;
 
 VMSymbol::VMSymbol(const char* str) :
   numberOfArgumentsOfSignature(Signature::DetermineNumberOfArguments(str)),
-  card(lastUnusedCard++)
+  card(CardDealer::instance().GetNewCard(str))
 {
     nextCachePos = 0;
     // set the chars-pointer to point at the position of the first character
-    chars = (char*) &cachedInvokable + +3 * sizeof(VMInvokable*);
+    chars = (char*) &cachedInvokable + 3 * sizeof(VMInvokable*) + sizeof(uint64_t);
     size_t i = 0;
     for (; i < strlen(str); ++i) {
         chars[i] = str[i];
@@ -55,7 +55,7 @@ VMSymbol::VMSymbol(const char* str) :
 
 VMSymbol::VMSymbol(const StdString& s) :
   numberOfArgumentsOfSignature(Signature::DetermineNumberOfArguments(s.c_str())),
-  card(lastUnusedCard++)
+  card(CardDealer::GetNewCard(s.c_str()))
 {
     VMSymbol(s.c_str());
 }
@@ -69,7 +69,7 @@ VMSymbol::VMSymbol(const char* str, int numberOfArgumentsOfSignature, uint64_t c
 {
     nextCachePos = 0;
     // set the chars-pointer to point at the position of the first character
-    chars = (char*) &cachedInvokable + +3 * sizeof(VMInvokable*);
+    chars = (char*) &cachedInvokable + +3 * sizeof(VMInvokable*) + sizeof(uint64_t);
     size_t i = 0;
     for (; i < strlen(str); ++i) {
         chars[i] = str[i];

@@ -79,11 +79,19 @@ void _System::HasGlobal_(Interpreter*, VMFrame* frame) {
 
 void _System::Load_(Interpreter*, VMFrame* frame) {
     VMSymbol* arg = static_cast<VMSymbol*>(frame->Pop());
+    bool writeToCache = false;
+
     frame->Pop();
+
+    if (!GetUniverse()->GetGlobal(arg))
+       writeToCache = true;
+    
     VMClass* result = GetUniverse()->LoadClass(arg);
-    if (result)
-        frame->Push(result);
-    else
+
+    if (result) {
+        if (writeToCache) GetUniverse()->WriteClassToSOMCache(result);
+	frame->Push(result);
+    } else
         frame->Push(load_ptr(nilObject));
 }
 

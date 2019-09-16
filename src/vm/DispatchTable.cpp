@@ -1,19 +1,13 @@
 #include "DispatchTable.h"
 
-CardManager CardManager::instance {};
+std::unique_ptr<CardDealer> CardDealer::dealer {};
 
-uint64_t NewCard() {
-   static uint64_t NEW_CARD = 0;
-   return NEW_CARD++;
-   //return CardManager::instance.NewCard();
-}
+CardDealer& CardDealer::instance()
+{
+   if (!dealer)
+      dealer = std::unique_ptr<CardDealer>(new CardDealer());
 
-void SetCard(uint64_t card) {
-   CardManager::instance.SetCard(card);
-}
-
-uint64_t CardManager::NewCard() {
-   return card++;
+   return *dealer;
 }
 
 template <std::size_t N>
@@ -37,7 +31,7 @@ void DispatchTable<N>::allocDispatchTable(DispatchTable<N>** table)
    } else {
       // randomly select a victim class and steal its table!
       auto index = rand() % N;
-      
+
       *table = *TABLE_CACHE[index];
       *TABLE_CACHE[index] = &DispatchTable<N>::defaultDispatchTable;
       TABLE_CACHE[index] = table;
@@ -45,4 +39,3 @@ void DispatchTable<N>::allocDispatchTable(DispatchTable<N>** table)
 }
 
 template class DispatchTable<256>;
-

@@ -107,8 +107,6 @@ void ObjectSerializer::operator()(VMBlock* block)
    (*this)(static_cast<VMObject*>(block), VMBlock::VMBlockNumberOfFields);
 
    serializeAndWrite(load_ptr(block->blockMethod));
-   // serializeAndWrite((uint64_t*) nullptr);
-   //serializeAndWrite(block->context); // should be NULL, yes?
 }
 
 void ObjectSerializer::operator()(VMDouble* dbl)

@@ -39,10 +39,10 @@ public:
 	static int64_t getSuperClass(int64_t object);
 	static const char* GET_SUPER_CLASS_LINE;
 
-        static void getGlobal(int64_t interp, int64_t framePtr, int64_t receiverPtr, int64_t globalNamePtr);
+        static void getGlobal(int64_t interp, int64_t framePtr, int64_t receiverPtr, int64_t* globalNamePtr);
 	static const char* GET_GLOBAL_LINE;
 
-	static int64_t getNewBlock(VMFrame* frame, int64_t blockMethod, int64_t numOfArgs);
+	static int64_t getNewBlock(VMFrame* frame, int64_t* blockMethod, int64_t numOfArgs);
 	static const char* GET_NEW_BLOCK_LINE;
 
 	static int64_t newInteger(int64_t value);
@@ -63,7 +63,7 @@ public:
 	static int64_t getInvokable(int64_t receiverClazz, int64_t* signature);
 	static const char* GET_INVOKABLE_LINE;
 
-	static int64_t doSendIfRequired(int64_t* interp, VMFrame* framePtr, int64_t invokablePtr, int64_t* receiverPtr, int64_t signaturePtr, int64_t bytecodeIndex);
+	static int64_t doSendIfRequired(int64_t* interp, VMFrame* framePtr, int64_t invokablePtr, int64_t* receiverPtr, int64_t* signaturePtr, int64_t bytecodeIndex);
 	static const char* DO_SEND_IF_REQUIRED_LINE;
 
 	static int64_t doInlineSendIfRequired(int64_t interp, int64_t framePtr, int64_t invokablePtr, int64_t receiverPtr, int64_t signaturePtr, int64_t bytecodeIndex);
@@ -72,7 +72,7 @@ public:
 	static VMFrame* allocateVMFrame(int64_t interp, int64_t previousFramePtr, int64_t methodPtr, int64_t argumentsPtr, int64_t localsPtr, int64_t** stackPtr, int64_t bytecodeIndex, int64_t recursiveLevel);
 	static const char* ALLOCATE_VMFRAME_LINE;
 
-	static int64_t doSuperSendHelper(int64_t* interp, VMFrame* frame, int64_t signaturePtr, int64_t bytecodeIndex);
+	static int64_t doSuperSendHelper(int64_t* interp, VMFrame* frame, int64_t* signaturePtr, int64_t bytecodeIndex);
 	static const char* DO_SUPER_SEND_HELPER_LINE;
 
 	static void popFrameAndPushResult(int64_t* interp, VMFrame* frame, int64_t* result);

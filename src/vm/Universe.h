@@ -42,6 +42,10 @@
 
 #include "../memory/Heap.h"
 
+#if GC_TYPE == OMR_GARBAGE_COLLECTION
+#include "../omr/compiler/env/SharedCache.hpp"
+#endif
+
 // #include "omrExampleVM.hpp"
 
 class SourcecodeCompiler;
@@ -51,6 +55,7 @@ struct SOM_VM;
 extern short dumpBytecodes;
 extern short gcVerbosity;
 #if GC_TYPE == OMR_GARBAGE_COLLECTION
+struct SOMCacheMetadataItemHeader;
 extern bool enableJIT;
 #endif
 
@@ -124,6 +129,7 @@ public:
     VMSymbol* NewSymbol(const StdString&);
     VMString* NewString(const char*) const;
     VMSymbol* NewSymbol(const char*);
+    VMSymbol* NewSymbol(const char*, int, uint64_t);
     VMClass* NewSystemClass(void) const;
 
     void InitializeSystemClass(VMClass*, VMClass*, const char*);
@@ -135,6 +141,8 @@ public:
     VMObject* InitializeGlobals();
     VMClass* GetBlockClass(void) const;
     VMClass* GetBlockClassWithArgs(long);
+
+    void WriteClassToSOMCache(VMClass*);
 
     VMClass* LoadClass(VMSymbol*);
     void LoadSystemClass(VMClass*);
@@ -160,10 +168,12 @@ public:
     static void Print(StdString str);
     static void ErrorPrint(StdString str);
 
-private:
-    set<VMMethod*> aotMethodQueue;
+private:    
+    vector<VMMethod*> aotMethodQueue;
+    set<VMMethod*> aotMethodsRecorded;
+    set<SOMCacheMetadataItemHeader> seenAddresses;
     
-    void saveToSOMCache();
+    void savePreludeToSOMCache();
     vector<StdString> handleArguments(long argc, char** argv);    
     long getClassPathExt(vector<StdString>& tokens, const StdString& arg) const;
 
