@@ -338,8 +338,8 @@ void Universe::compileAOTMethods() {
    void *entry = nullptr;
    TR::SharedCache* sharedCache = TR::Compiler->aotAdapter.getSharedCache();
 
-   SOMppMethod::setMinimalAssumptionID(sharedCache->assumptionID());
-   VMSymbol::setMinimalCardValue(sharedCache->card());
+   //SOMppMethod::setMinimalAssumptionID(sharedCache->assumptionID());
+   //VMSymbol::setMinimalCardValue(sharedCache->card());
 
    auto* cache = TR::Compiler->aotAdapter.getSharedCache();
    SOMppMethod::assumptionID = cache->lastAssumptionID();
@@ -364,8 +364,8 @@ void Universe::compileAOTMethods() {
      }
    }
 
-   sharedCache->storeAssumptionID(SOMppMethod::getAssumptionID());
-   sharedCache->storeCard(VMSymbol::getCardValue());
+   //sharedCache->storeAssumptionID(SOMppMethod::getAssumptionID());
+   //sharedCache->storeCard(VMSymbol::getCardValue());
    cache->setLastAssumptionID(SOMppMethod::assumptionID);
 }
 
