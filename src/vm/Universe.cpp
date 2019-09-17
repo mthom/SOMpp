@@ -932,7 +932,7 @@ VMObject* Universe::InitializeFromCache()
     const auto* oldNewAddresses = deserialize.GetAddressOfOldNewAddresses();
     TR::Compiler->aotAdapter.setOldNewAddressesMap(oldNewAddresses);
 
-    const auto* reverseLookup = deserialize.GetAddressOfReverseLookupMap();
+    auto reverseLookup = deserialize.GetReverseLookupMap();
     TR::Compiler->aotAdapter.setReverseLookupMap(reverseLookup);
 
     obtain_vtables_of_known_classes(load_ptr(nilClass)->GetName());

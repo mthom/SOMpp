@@ -14,6 +14,8 @@
 
 #include "../vm/Universe.h"
 
+#include "../omr/compiler/env/CompilerEnv.hpp"
+
 #include "ObjectSerializer.hpp"
 
 void ObjectSerializer::serializeAndWrite(vm_oop_t obj)
@@ -22,6 +24,25 @@ void ObjectSerializer::serializeAndWrite(vm_oop_t obj)
       return;
 
    obj->visit(*this);
+}
+
+bool ObjectSerializer::checkForSeenAddress(ItemHeader::ItemDesc desc, gc_oop_t obj)
+{ 
+   AbstractVMObject* vm_obj = dynamic_cast<AbstractVMObject*>(load_ptr(obj));
+
+   if (vm_obj == nullptr)
+      return false;
+   
+   auto* rr_vm_obj = TR::Compiler->aotAdapter.reverseLookup(vm_obj);
+   auto header = ItemHeader { desc, rr_vm_obj, vm_obj->GetObjectSize() };	
+   auto it = seenAddresses.find(header);
+
+   if (it != seenAddresses.end()) {
+      bufferWriter->writeHeader(header);
+      return true;
+   }
+
+   return false;
 }
 
 void ObjectSerializer::operator()(VMClass* clazz)
@@ -319,3 +340,4 @@ void ObjectSerializer::operator()(VMSymbol* symbol)
    */
    bufferWriter->write(symbol->card);
 }
+

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <map>
+#include <memory>
 #include <vector>
 
 #include "ObjectFormats.h"
@@ -14,6 +15,8 @@ using ItemHeader = SOMCacheMetadataItemHeader;
 
 class ObjectDeserializer {
 public:
+    ObjectDeserializer();
+
     virtual ~ObjectDeserializer();
 
     gc_oop_t operator()(MetadataIterator&);
@@ -32,8 +35,8 @@ public:
         return classes;
     }
 
-    auto* GetAddressOfReverseLookupMap() {
-        return &reverseLookupMap;
+    auto GetReverseLookupMap() {
+        return reverseLookupMap;
     }
 
     void resetAddressMap() {
@@ -59,7 +62,7 @@ private:
 
 private:
     std::map<ItemHeader, AbstractVMObject*> oldNewAddresses;
-    std::map<AbstractVMObject*, AbstractVMObject*> reverseLookupMap; // reverse lookup for relocations.
+    std::shared_ptr<std::map<AbstractVMObject*, AbstractVMObject*>> reverseLookupMap; // reverse lookup for relocations.
     std::vector<VMClass*> classes;
     uint64_t card = 0;
 };

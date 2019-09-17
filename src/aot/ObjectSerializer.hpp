@@ -55,23 +55,7 @@ public:
 
 private:
     void serializeAndWrite(vm_oop_t obj);
-
-    bool checkForSeenAddress(ItemHeader::ItemDesc desc, gc_oop_t obj) {
-        AbstractVMObject* vm_obj = dynamic_cast<AbstractVMObject*>(load_ptr(obj));
-
-	if (vm_obj == nullptr)
-	   return false;
-
-	auto header = ItemHeader { desc, vm_obj, vm_obj->GetObjectSize() };	
-        auto it = seenAddresses.find(header);
-
-	if (it != seenAddresses.end()) {
-	   bufferWriter->writeHeader(header);
-	   return true;
-	}
-
-	return false;
-    }
+    bool checkForSeenAddress(ItemHeader::ItemDesc desc, gc_oop_t obj);
 
     BufferWriter *bufferWriter;
     std::set<ItemHeader> seenAddresses;
