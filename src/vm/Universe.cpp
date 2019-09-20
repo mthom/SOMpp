@@ -61,6 +61,7 @@
 #include "JitBuilder.hpp"
 #include "ilgen/TypeDictionary.hpp"
 #include "../../omrglue/CollectorLanguageInterfaceImpl.hpp"
+#include "../../omrglue/BytecodeHelper.hpp"
 #include "../../src/jit/SOMppMethod.hpp"
 #include "../../omr/include_core/omrvm.h"
 #include "../../omr/include_core/omrlinkedlist.h"
@@ -343,6 +344,30 @@ void Universe::compileAOTMethods() {
 
    auto* cache = TR::Compiler->aotAdapter.getSharedCache();
    SOMppMethod::assumptionID = cache->lastAssumptionID();
+
+   setCodeEntry("getClass",(void *)&BytecodeHelper::getClass);
+   setCodeEntry("getSuperClass",(void *)&BytecodeHelper::getSuperClass);
+   setCodeEntry("getGlobal",(void *)&BytecodeHelper::getGlobal);
+   setCodeEntry("getNewBlock",(void *)&BytecodeHelper::getNewBlock);
+   setCodeEntry("newInteger",(void *)&BytecodeHelper::newInteger);
+   setCodeEntry("newDouble",(void *)&BytecodeHelper::newDouble);
+   setCodeEntry("newArray",(void *)&BytecodeHelper::newArray);
+   setCodeEntry("getFieldFrom",(void *)&BytecodeHelper::getFieldFrom);
+   setCodeEntry("setFieldTo",(void *)&BytecodeHelper::setFieldTo);
+   setCodeEntry("getInvokable",(void *)&BytecodeHelper::getInvokable);
+   setCodeEntry("doSendIfRequired",(void *)&BytecodeHelper::doSendIfRequired);
+   setCodeEntry("allocateVMFrame",(void *)&BytecodeHelper::allocateVMFrame);
+   setCodeEntry("doInlineSendIfRequired",(void *)&BytecodeHelper::doInlineSendIfRequired);
+   setCodeEntry("doSuperSendHelper",(void *)&BytecodeHelper::doSuperSendHelper);
+   setCodeEntry("popFrameAndPushResult",(void *)&BytecodeHelper::popFrameAndPushResult);
+   setCodeEntry("popToContext",(void *)&BytecodeHelper::popToContext);
+   setCodeEntry("printObject",(void *)&BytecodeHelper::printObject);
+   setCodeEntry("invokeHelper",(void *)&BytecodeHelper::invokeHelper);
+   setCodeEntry("getInvokableByDispatch",(void *)&BytecodeHelper::getInvokableByDispatch);
+   setCodeEntry("getAddressOfDispatchTable",(void *)&BytecodeHelper::getAddressOfDispatchTable);
+   setCodeEntry("selectorMismatchHandler",(void *)&BytecodeHelper::selectorMismatchHandler);
+   setCodeEntry("patchDispatchTableLoad",(void *)&BytecodeHelper::patchDispatchTableLoad);
+   setCodeEntry("getInvokableCard",(void *)&BytecodeHelper::getInvokableCard);
 
    for (auto& methodStub : aotMethodQueue) {
      std::string methodName(methodStub->GetHolder()->GetName()->GetChars());
