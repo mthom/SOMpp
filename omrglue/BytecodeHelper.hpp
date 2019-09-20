@@ -98,6 +98,14 @@ public:
         static const char* GET_INVOKABLE_CARD_LINE;
         static void handleUnknownGlobal(int64_t interp, int64_t framePtr, int64_t receiverPtr, int64_t globalNamePtr);
         static const char* HANDLE_UNKNOWN_GLOBAL_LINE;
+        
+        static void printString(int64_t stringPointer);
+        static const char* PRINTSTRING_LINE;
+        static void printInt64(int64_t value);
+        static const char* PRINTINT64_LINE;
+        static void printInt64Hex(int64_t value);
+        static const char* PRINTINT64HEX_LINE;
+
 };
 
 #endif /* BYTECODEHELPER_INCL */

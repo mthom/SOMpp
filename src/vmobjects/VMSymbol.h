@@ -50,7 +50,14 @@ public:
     inline uint64_t GetCard() {
         return card;
     }
+
+    static uint64_t getCardValue() { return lastUnusedCard; }
     
+    static void setMinimalCardValue(uint64_t min) {
+      if (min > lastUnusedCard)
+         lastUnusedCard = min+1;
+    }
+
     std::vector<fomrobject_t*> GetFieldPtrs() {
       std::vector<fomrobject_t*> fields;
 
@@ -74,6 +81,7 @@ private:
     long nextCachePos;
     GCInvokable* cachedInvokable[3];
     const uint64_t card;
+    static uint64_t lastUnusedCard;
     
     inline VMInvokable* GetCachedInvokable(const VMClass*) const;
     inline void UpdateCachedInvokable(const VMClass* cls, VMInvokable* invo);
