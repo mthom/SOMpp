@@ -3,5 +3,5 @@
 	url = https://github.com/SOM-st/SOM.git
 [submodule "omr"]
 	path = omr
-	url = http://gitlab.casa.cs.unb.ca/gkrylov/omrforwasmjitandsom/tree/sompp_marking_delegate
+	url = git@gitlab.casa.cs.unb.ca:gkrylov/omrforwasmjitandsom.git
 	branch = sompp_marking_delegate
