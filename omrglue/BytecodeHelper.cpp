@@ -681,6 +681,28 @@ BytecodeHelper::getInvokableByDispatch(int64_t receiverPtr, int64_t signaturePtr
 //	 return reinterpret_cast<int64_t>(method);
 }
 
+void
+BytecodeHelper::printString(int64_t stringPointer)
+{
+#define VALUE_FOR_PRINTSTRING_LINE LINETOSTR(__LINE__)
+	char *strPtr = (char *) stringPointer;
+	fprintf(stderr, "%s", strPtr);
+}
+
+void
+BytecodeHelper::printInt64(int64_t value)
+{
+#define VALUE_FOR_PRINTINT64_LINE LINETOSTR(__LINE__)
+	fprintf(stderr, "%ld", value);
+}
+
+void
+BytecodeHelper::printInt64Hex(int64_t value)
+{
+#define VALUE_FOR_PRINTINT64HEX_LINE LINETOSTR(__LINE__)
+	fprintf(stderr, "%lx", value);
+}
+
 const char* BytecodeHelper::GET_CLASS_LINE = VALUE_FOR_GET_CLASS_LINE;
 const char* BytecodeHelper::GET_SUPER_CLASS_LINE = VALUE_FOR_GET_SUPER_CLASS_LINE;
 const char* BytecodeHelper::GET_GLOBAL_LINE = VALUE_FOR_GET_GLOBAL_LINE;
@@ -705,3 +727,7 @@ const char* BytecodeHelper::SELECTOR_MISMATCH_HANDLER_LINE = VALUE_FOR_SELECTOR_
 const char* BytecodeHelper::PATCH_DISPATCH_TABLE_LOAD_LINE = VALUE_FOR_PATCH_DISPATCH_TABLE_LOAD_LINE;
 const char* BytecodeHelper::GET_INVOKABLE_CARD_LINE = VALUE_FOR_GET_INVOKABLE_CARD_LINE;
 const char* BytecodeHelper::HANDLE_UNKNOWN_GLOBAL_LINE = VALUE_FOR_HANDLE_UNKNOWN_GLOBAL_LINE;
+const char* BytecodeHelper::PRINTSTRING_LINE = VALUE_FOR_PRINTSTRING_LINE;
+const char* BytecodeHelper::PRINTINT64_LINE = VALUE_FOR_PRINTINT64_LINE;
+const char* BytecodeHelper::PRINTINT64HEX_LINE = VALUE_FOR_PRINTINT64HEX_LINE;
+

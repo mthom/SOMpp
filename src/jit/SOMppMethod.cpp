@@ -149,7 +149,7 @@ class SOMppVMState : public OMR::JitBuilder::VirtualMachineState
 #define PICK(b,d)         (STACK(b)->Pick(d))
 #define GET_STACKTOP(b)   (STACK(b)->GetStackTop())
 #define SET_STACKTOP(b,v) (STACK(b)->SetStackTop(v))
-
+/*
 static void
 printString(int64_t stringPointer)
 {
@@ -171,7 +171,7 @@ printInt64Hex(int64_t value)
 #define PRINTINT64HEX_LINE LINETOSTR(__LINE__)
 	fprintf(stderr, "%lx", value);
 }
-
+*/
 OMR::JitBuilder::IlValue *
 SOMppMethod::add(OMR::JitBuilder::BytecodeBuilder *builder, OMR::JitBuilder::IlValue *param1, OMR::JitBuilder::IlValue *param2)
 {
@@ -303,7 +303,7 @@ SOMppMethod::defineParameters()
 
 void
 SOMppMethod::defineFunction(const char* name)
-{
+{/*
    if (_functionsAdded.find(name) != _functionsAdded.end())
        return;
    else
@@ -314,7 +314,7 @@ SOMppMethod::defineFunction(const char* name)
 		  NoType,
 		  2,
 		  pInt64,
-		  pVMFrame);
+		  pVMFrame);*/
 }
 
 void
@@ -342,9 +342,9 @@ SOMppMethod::defineStructures(OMR::JitBuilder::TypeDictionary *types)
 void
 SOMppMethod::defineFunctions()
 {
-	DefineFunction((char *)"printString", (char *)__FILE__, (char *)PRINTSTRING_LINE, (void *)&printString, NoType, 1, Int64);
-	DefineFunction((char *)"printInt64", (char *)__FILE__, (char *)PRINTINT64_LINE, (void *)&printInt64, NoType, 1, Int64);
-	DefineFunction((char *)"printInt64Hex", (char *)__FILE__, (char *)PRINTINT64HEX_LINE, (void *) &printInt64Hex, NoType, 1, Int64);
+	DefineFunction((char *)"printString", (char *)BytecodeHelper::BYTECODEHELPER_FILE, (char *)BytecodeHelper::PRINTSTRING_LINE, (void *)&BytecodeHelper::printString, NoType, 1, Int64);
+	DefineFunction((char *)"printInt64", (char *)BytecodeHelper::BYTECODEHELPER_FILE, (char *)BytecodeHelper::PRINTINT64_LINE, (void *)&BytecodeHelper::printInt64, NoType, 1, Int64);
+	DefineFunction((char *)"printInt64Hex",(char *)BytecodeHelper::BYTECODEHELPER_FILE, (char *)BytecodeHelper::PRINTINT64HEX_LINE, (void *)&BytecodeHelper::printInt64Hex, NoType, 1, Int64);
 	DefineFunction((char *)"getClass", (char *)BytecodeHelper::BYTECODEHELPER_FILE, (char *)BytecodeHelper::GET_CLASS_LINE, (void *)&BytecodeHelper::getClass, Int64, 1, pInt64);
 	DefineFunction((char *)"getSuperClass", (char *)BytecodeHelper::BYTECODEHELPER_FILE, (char *)BytecodeHelper::GET_SUPER_CLASS_LINE, (void *)&BytecodeHelper::getSuperClass, Int64, 1, Int64);
 	DefineFunction((char *)"getGlobal", (char *)BytecodeHelper::BYTECODEHELPER_FILE, (char *)BytecodeHelper::GET_GLOBAL_LINE, (void *)&BytecodeHelper::getGlobal, NoType, 4, Int64, Int64, Int64, pInt64);
@@ -819,14 +819,14 @@ SOMppMethod::doPopField(OMR::JitBuilder::BytecodeBuilder *builder, long bytecode
 
 bool
 SOMppMethod::RequestFunction(const char *name)
-{
+{/*
    DefineFunction(name, (char*)__FILE__, (char *)PRINTSTRING_LINE,
 		  reinterpret_cast<void*>(18),
 		  NoType,
 		  2,
 		  pInt64,
 		  pVMFrame);
-
+*/
    return true;
 }
 

@@ -35,6 +35,8 @@
 
 extern GCClass* symbolClass;
 
+uint64_t VMSymbol::lastUnusedCard = 0;
+
 VMSymbol::VMSymbol(const char* str) :
   numberOfArgumentsOfSignature(Signature::DetermineNumberOfArguments(str)),
   card(CardDealer::instance().GetNewCard(str))
