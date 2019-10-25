@@ -34,6 +34,11 @@ ObjectDeserializer::ObjectDeserializer()
    : reverseLookupMap(std::make_shared<std::map<AbstractVMObject*, AbstractVMObject*>>())
 {}
 
+ObjectDeserializer::ObjectDeserializer(std::shared_ptr<std::map<AbstractVMObject*, AbstractVMObject*>>& map)
+   : reverseLookupMap(map)
+   , card(CardDealer::GetCurrentCard() + 1)
+{}
+
 ObjectDeserializer::~ObjectDeserializer()
 {
    CardDealer::SetCard(card + 1);

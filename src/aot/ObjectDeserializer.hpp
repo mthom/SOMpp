@@ -4,7 +4,7 @@
 #include <memory>
 #include <vector>
 
-#include "ObjectFormats.h"
+#include "../vmobjects/ObjectFormats.h"
 #include "BufferWriter.hpp"
 #include "SOMCompositeCache.hpp"
 
@@ -16,6 +16,7 @@ using ItemHeader = SOMCacheMetadataItemHeader;
 class ObjectDeserializer {
 public:
     ObjectDeserializer();
+    ObjectDeserializer(std::shared_ptr<std::map<AbstractVMObject*, AbstractVMObject*>>&);
 
     virtual ~ObjectDeserializer();
 
@@ -64,5 +65,6 @@ private:
     std::map<ItemHeader, AbstractVMObject*> oldNewAddresses;
     std::shared_ptr<std::map<AbstractVMObject*, AbstractVMObject*>> reverseLookupMap; // reverse lookup for relocations.
     std::vector<VMClass*> classes;
+
     uint64_t card = 0;
 };

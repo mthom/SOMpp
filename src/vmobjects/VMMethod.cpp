@@ -155,8 +155,8 @@ long VMMethod::GetNumberOfBytecodes() const {
     return INT_VAL(load_ptr(bcLength));
 }
 
-void VMMethod::Invoke(Interpreter* interp, VMFrame* frame) {
     static int allowedInvocations = 0;   
+void VMMethod::Invoke(Interpreter* interp, VMFrame* frame) {
     VMFrame* frm = interp->PushNewFrame(this);
     frm->CopyArgumentsFrom(frame);
 

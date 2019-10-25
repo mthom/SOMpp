@@ -52,16 +52,16 @@ public:
     }
     
     std::vector<fomrobject_t*> GetFieldPtrs() {
-      std::vector<fomrobject_t*> fields;
-
-      fields.push_back((fomrobject_t*) &cachedClass_invokable[0]);
-      fields.push_back((fomrobject_t*) &cachedClass_invokable[1]);
-      fields.push_back((fomrobject_t*) &cachedClass_invokable[2]);
-      fields.push_back((fomrobject_t*) &cachedInvokable[0]);
-      fields.push_back((fomrobject_t*) &cachedInvokable[1]);      
-      fields.push_back((fomrobject_t*) &cachedInvokable[2]);
-
-      return fields;
+        std::vector<fomrobject_t*> fields;
+        
+        fields.push_back((fomrobject_t*) &cachedClass_invokable[0]);
+        fields.push_back((fomrobject_t*) &cachedClass_invokable[1]);
+        fields.push_back((fomrobject_t*) &cachedClass_invokable[2]);
+        fields.push_back((fomrobject_t*) &cachedInvokable[0]);
+        fields.push_back((fomrobject_t*) &cachedInvokable[1]);      
+        fields.push_back((fomrobject_t*) &cachedInvokable[2]);
+        
+        return fields;
     }
 
     virtual void visit(SOMObjectVisitor& visitor) {

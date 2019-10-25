@@ -42,6 +42,8 @@
 
 #include "../memory/Heap.h"
 
+#include "../src/aot/ObjectDeserializer.hpp"
+
 #if GC_TYPE == OMR_GARBAGE_COLLECTION
 #include "../omr/compiler/env/SharedCache.hpp"
 #endif
@@ -133,7 +135,10 @@ public:
     VMClass* NewSystemClass(void) const;
 
     void InitializeSystemClass(VMClass*, VMClass*, const char*);
+
     VMObject* InitializeFromCache();
+    void ProcessLoadedClasses(ObjectDeserializer& deserialize,
+			      SOMCacheMetadataEntryIterator& it);
 
     vm_oop_t GetGlobal(VMSymbol*);
     void SetGlobal(VMSymbol* name, vm_oop_t val);

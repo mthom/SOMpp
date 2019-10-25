@@ -6,6 +6,8 @@
 #include "SOMCompositeCache.hpp"
 #include "BufferWriter.hpp"
 
+#include "../vmobjects/VMClass.h"
+
 class SOMCacheWriter: public BufferWriter
 {
 public:
@@ -13,7 +15,7 @@ public:
         : cache(cache)
     {
         // the prelude without compiled methods or relocations is
-        // about 98 bytes in size.
+        // about 98 kilobytes in size.
         contents.reserve(99 * 1024);
     }
 
@@ -31,11 +33,8 @@ public:
         _write<uint64_t>(ptr);
     }
 
-    void write(char* ptr, size_t length)
-    {
-        for(long i = 0; i < length; ++i) {
-	   contents.push_back(ptr[i]);
-	}
+    void write(char* ptr, size_t length) {
+        std::copy(ptr, ptr + length, std::back_inserter(contents));
     }
 
     void write(double ptr) {
@@ -59,15 +58,15 @@ public:
     }
 
     void writeBytecodes(uint8_t* bytecodes, size_t length) {
-       std::copy(bytecodes, bytecodes + length, std::back_inserter(contents));
+        std::copy(bytecodes, bytecodes + length, std::back_inserter(contents));
     }
 
     void flushToPreludeArea() {
-       cache->copyPreludeBuffer(contents.data(), contents.size());
+        cache->copyPreludeBuffer(contents.data(), contents.size());
     }
 
-    void flushToMetadataArea() {
-       cache->copyMetadata(contents.data(), contents.size());
+    void flushToMetadataArea(const VMClass* clazz) {
+        cache->copyMetadata(clazz->GetName()->GetChars(), contents.data(), contents.size());
     }
 
 private:

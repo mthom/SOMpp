@@ -18,6 +18,4 @@ public:
     virtual void write(bool) = 0;
     virtual void write(int) = 0;
     virtual void writeBytecodes(uint8_t*, size_t) = 0;
-
-protected:
 };

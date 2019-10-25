@@ -46,7 +46,6 @@
 #include <vmobjects/VMString.h>
 #include <vmobjects/VMEvaluationPrimitive.h>
 
-#include <aot/ObjectDeserializer.hpp>
 #include <aot/ObjectSerializer.hpp>
 #include <aot/SOMCacheWriter.hpp>
 
@@ -991,19 +990,7 @@ VMObject* Universe::InitializeFromCache()
 
     it = cache->constructMetadataSectionEntryIterator();
 
-    while(true) {
-       auto object = reinterpret_cast<vm_oop_t>(deserialize(it));
-
-       if (object == nullptr)
-	  break;
-    }
-
-    for(auto* clazz : deserialize.GetPreprocessedClasses()) {
-       SetGlobal(clazz->GetName(), clazz);
-       LoadPrimitives(clazz);
-       enqueueAOTMethods(clazz);
-    }
-
+    ProcessLoadedClasses(deserialize, it);
     compileAOTMethods();
 
     for(auto pair : deserialize.GetOldNewAddresses()) {
@@ -1011,6 +998,18 @@ VMObject* Universe::InitializeFromCache()
     }
 
     return systemObject;
+}
+
+void Universe::ProcessLoadedClasses(ObjectDeserializer& deserialize,
+				    SOMCacheMetadataEntryIterator& it)
+{
+    while(deserialize(it)) ;;
+
+    for(auto* clazz : deserialize.GetPreprocessedClasses()) {
+       SetGlobal(clazz->GetName(), clazz);
+       LoadPrimitives(clazz);
+       enqueueAOTMethods(clazz);
+    }    
 }
 
 void Universe::Assert(bool value) const {
@@ -1104,7 +1103,7 @@ void Universe::WriteClassToSOMCache(VMClass* clazz)
    ObjectSerializer serializer(std::move(seenAddresses), &writer);
 
    clazz->visit(serializer);
-   writer.flushToMetadataArea();
+   writer.flushToMetadataArea(clazz);
 
    seenAddresses = serializer.takeSeenAddresses();
 }

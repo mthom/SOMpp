@@ -16,13 +16,18 @@ private:
 public:
    static CardDealer& instance();
 
-   static uint64_t GetNewCard(const char* symbol) {
+   static uint64_t GetNewCard(const char*) {
       return instance().card++;
    }
 
+   static uint64_t GetCurrentCard() {
+      return instance().card;
+   }
+
    static void SetCard(uint64_t newCard) {
-      if (newCard > instance().card)
+      if (newCard > instance().card) {
          instance().card = newCard;
+      }
    }
 };
 
