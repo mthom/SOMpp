@@ -25,7 +25,7 @@ void DispatchTable<N>::allocDispatchTable(DispatchTable<N>** table)
    static uint32_t LAST_UNUSED_TABLE = 0;
    static DispatchTable<N>** TABLE_CACHE[N] = {};
 
-   if (LAST_UNUSED_TABLE + 1 < N) {
+   if (LAST_UNUSED_TABLE < N) {
       TABLE_CACHE[LAST_UNUSED_TABLE++] = table;
       *table = new (GetHeap<HEAP_CLS>()) DispatchTable<N>();
    } else {

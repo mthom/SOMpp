@@ -341,55 +341,6 @@ Interpreter::selectorMismatchHandler(VMSymbol* signature, VMClass* clazz, uint64
 
    return method;
 }
-/*
-void Interpreter::send(uint64_t, uint64_t, VMSymbol* signature, VMClass* receiverClass) {
-    VMInvokable* invokable = receiverClass->LookupInvokable(signature);
-
-    if (invokable != nullptr) {
-#ifdef LOG_RECEIVER_TYPES
-        StdString name = receiverClass->GetName()->GetStdString();
-        if (GetUniverse()->callStats.find(name) == GetUniverse()->callStats.end())
-        GetUniverse()->callStats[name] = {0,0};
-        GetUniverse()->callStats[name].noCalls++;
-        if (invokable->IsPrimitive())
-        GetUniverse()->callStats[name].noPrimitiveCalls++;
-#endif
-        // since an invokable is able to change/use the frame, we have to write
-        // cached values before, and read cached values after calling
-        GetFrame()->SetBytecodeIndex(bytecodeIndexGlobal);
-        invokable->Invoke(this, GetFrame());
-        bytecodeIndexGlobal = GetFrame()->GetBytecodeIndex();
-    } else {
-        //doesNotUnderstand
-        long numberOfArgs = Signature::GetNumberOfArguments(signature);
-
-        vm_oop_t receiver = GetFrame()->GetStackElement(numberOfArgs-1);
-
-        VMArray* argumentsArray = GetUniverse()->NewArray(numberOfArgs - 1); // without receiver
-
-        // the receiver should not go into the argumentsArray
-        // so, numberOfArgs - 2
-        for (long i = numberOfArgs - 2; i >= 0; --i) {
-            vm_oop_t o = GetFrame()->Pop();
-            argumentsArray->SetIndexableField(i, o);
-        }
-        vm_oop_t arguments[] = {signature, argumentsArray};
-        
-        GetFrame()->Pop(); // pop the receiver
-
-        //check if current frame is big enough for this unplanned Send
-        //doesNotUnderstand: needs 3 slots, one for this, one for method name, one for args
-        long additionalStackSlots = 3 - GetFrame()->RemainingStackSize();
-        if (additionalStackSlots > 0) {
-            GetFrame()->SetBytecodeIndex(bytecodeIndexGlobal);
-            //copy current frame into a bigger one and replace the current frame
-            SetFrame(VMFrame::EmergencyFrameFrom(GetFrame(), additionalStackSlots));
-        }
-
-        AS_OBJ(receiver)->Send(this, doesNotUnderstand, arguments, 2);
-    }
-}
-*/
 
 VMInvokable* Interpreter::findMethod(uint8_t code, VMSymbol* signature, VMClass* receiverClass)
 {
@@ -430,56 +381,6 @@ void Interpreter::doesNotUnderstandHandler(VMSymbol* signature)
 
    AS_OBJ(receiver)->Send(this, doesNotUnderstand, arguments, 2);
 }
-
-/*
-void Interpreter::send(VMSymbol* signature, VMClass* receiverClass) {
-    VMInvokable* invokable = receiverClass->LookupInvokable(signature);
-
-    if (invokable != nullptr) {
-#ifdef LOG_RECEIVER_TYPES
-        StdString name = receiverClass->GetName()->GetStdString();
-        if (GetUniverse()->callStats.find(name) == GetUniverse()->callStats.end())
-        GetUniverse()->callStats[name] = {0,0};
-        GetUniverse()->callStats[name].noCalls++;
-        if (invokable->IsPrimitive())
-        GetUniverse()->callStats[name].noPrimitiveCalls++;
-#endif
-        // since an invokable is able to change/use the frame, we have to write
-        // cached values before, and read cached values after calling
-        GetFrame()->SetBytecodeIndex(bytecodeIndexGlobal);
-        invokable->Invoke(this, GetFrame());
-        bytecodeIndexGlobal = GetFrame()->GetBytecodeIndex();
-    } else {
-        //doesNotUnderstand
-        long numberOfArgs = Signature::GetNumberOfArguments(signature);
-
-        vm_oop_t receiver = GetFrame()->GetStackElement(numberOfArgs-1);
-
-        VMArray* argumentsArray = GetUniverse()->NewArray(numberOfArgs - 1); // without receiver
-
-        // the receiver should not go into the argumentsArray
-        // so, numberOfArgs - 2
-        for (long i = numberOfArgs - 2; i >= 0; --i) {
-            vm_oop_t o = GetFrame()->Pop();
-            argumentsArray->SetIndexableField(i, o);
-        }
-        vm_oop_t arguments[] = {signature, argumentsArray};
-
-        GetFrame()->Pop(); // pop the receiver
-
-        //check if current frame is big enough for this unplanned Send
-        //doesNotUnderstand: needs 3 slots, one for this, one for method name, one for args
-        long additionalStackSlots = 3 - GetFrame()->RemainingStackSize();
-        if (additionalStackSlots > 0) {
-            GetFrame()->SetBytecodeIndex(bytecodeIndexGlobal);
-            //copy current frame into a bigger one and replace the current frame
-            SetFrame(VMFrame::EmergencyFrameFrom(GetFrame(), additionalStackSlots));
-        }
-
-        AS_OBJ(receiver)->Send(this, doesNotUnderstand, arguments, 2);
-    }
-}
-*/
 
 void Interpreter::doDup() {
     vm_oop_t elem = GetFrame()->GetStackElement(0);
