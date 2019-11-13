@@ -76,7 +76,7 @@ set(JIT_SRC "${JIT_INCLUDE}/SOMppMethod.cpp")
 
 set(AOT_INCLUDE "${CMAKE_CURRENT_SOURCE_DIR}/src/aot")
 
-set(AOT_SRC "${AOT_INCLUDE}/ObjectSerializer.cpp" 
+set(AOT_SRC "${AOT_INCLUDE}/ObjectSerializer.cpp"
             "${AOT_INCLUDE}/ObjectDeserializer.cpp")
 
 set(VM_OBJECTS_INCLUDE "${CMAKE_CURRENT_SOURCE_DIR}/src/vmobjects")
@@ -105,7 +105,7 @@ target_sources(som_vm INTERFACE
   "${MEMORY_SRC}" "${JIT_SRC}" "${PRIMITIVES_CORE_SRC}" "${AOT_SRC}"
   "${PRIMITIVES_SRC}" "${MISC_SRC}")
 
-target_link_libraries(som_vm INTERFACE jitbuilder omrcore omrvmstartup)
+target_link_libraries(som_vm INTERFACE jitbuilder omrcore omrvmstartup som_shared_cache)
 
 target_include_directories(som_vm INTERFACE
   "${OMR_GLUE_INCLUDE}" "${OMR_INCLUDE}" "${INTERPRETER_INCLUDE}" "${JIT_INCLUDE}"

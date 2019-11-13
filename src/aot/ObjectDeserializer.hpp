@@ -6,7 +6,7 @@
 
 #include "../vmobjects/ObjectFormats.h"
 #include "BufferWriter.hpp"
-#include "SOMCompositeCache.hpp"
+#include "../../omr/runtime/shared_common/modifications/som_cache/SOMCompositeCache.hpp"
 
 #include "../misc/defs.h"
 
