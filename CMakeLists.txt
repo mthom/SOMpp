@@ -158,6 +158,9 @@ add_library(omr_som_gc_glue INTERFACE)
 set(OMR_GC_GLUE_TARGET "omr_som_gc_glue" CACHE
     STRING "The gc glue target, must be interface library" FORCE)
 
+add_definitions(-DDEFAULT_OMR_JIT_ON=false -DGC_TYPE=OMR_GARBAGE_COLLECTION) # -DUSE_TAGGING=false -DCACHE_INTEGER=false)
+#  was OMR_GARBAGE_COLLECTION
+
 target_sources(omr_som_gc_glue
   INTERFACE
     ${OMR_GLUE_SRC})
@@ -170,12 +173,10 @@ target_link_libraries(omr_som_gc_glue
 target_include_directories(omr_som_gc_glue INTERFACE
    "${OMR_GLUE_INCLUDE}" "${OMR_INCLUDE}" "${VM_INCLUDE}")
 
-add_definitions(-DDEFAULT_OMR_JIT_ON=false -DGC_TYPE=OMR_GARBAGE_COLLECTION) # -DUSE_TAGGING=false -DCACHE_INTEGER=false)
-#  was OMR_GARBAGE_COLLECTION
-
 add_executable(som "src/Main.cpp")
 
-target_include_directories(som PRIVATE ${VM_INCLUDE}
+target_include_directories(som PRIVATE src/
+                                       ${VM_INCLUDE}
                                        ${VM_OBJECTS_INCLUDE}
                                        ${COMPILER_INCLUDE}
 				       ${MISC_INCLUDE}
@@ -186,6 +187,6 @@ target_include_directories(som PRIVATE ${VM_INCLUDE}
 				       ${OMR_GLUE_INCLUDE}
 				       ${OMR_INCLUDE}
 				       ${SOM_CACHE_INCLUDE}
-				       src/)
+				       )
 
 target_link_libraries(som omr_som_gc_glue omrgc som_vm)

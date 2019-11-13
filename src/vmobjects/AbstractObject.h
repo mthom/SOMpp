@@ -15,6 +15,7 @@
 #include <memory/GenerationalHeap.h>
 #include <memory/CopyingHeap.h>
 #include <memory/MarkSweepHeap.h>
+
 #if GC_TYPE == OMR_GARBAGE_COLLECTION
 #include <memory/OMRHeap.h>
 #endif
@@ -38,15 +39,15 @@ using namespace std;
 class AbstractVMObject: public VMObjectBase {
 public:
     typedef GCAbstractObject Stored;
-    
+
     virtual size_t GetHash();
     virtual VMClass* GetClass() const = 0;
     virtual AbstractVMObject* Clone() const = 0;
     // returns true to indicate that the found invokable is compiled.
     virtual bool Send(Interpreter*, StdString, vm_oop_t*, long);
-    
+
     virtual void MarkObjectAsInvalid() = 0;
-    
+
     virtual StdString AsDebugString() const = 0;
 
     AbstractVMObject() {
@@ -71,7 +72,7 @@ public:
         Universe::ErrorPrint("this object doesn't support SetClass\n");
         throw "this object doesn't support SetClass";
     }
-    
+
     long GetFieldIndex(VMSymbol* fieldName) const;
 
     inline virtual void WalkObjects(walk_heap_fn) {
@@ -102,5 +103,4 @@ public:
         assert(result != INVALID_VM_POINTER);
         return result;
     }
-
 };

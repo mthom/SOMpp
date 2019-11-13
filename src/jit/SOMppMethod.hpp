@@ -19,7 +19,7 @@
 #ifndef SOMPPMETHOD_INCL
 #define SOMPPMETHOD_INCL
 
-#include "VMFrame.h"
+#include "vmobjects/VMFrame.h"
 
 #include "JitBuilder.hpp"
 #include "VirtualMachineOperandStack.hpp"

@@ -7,7 +7,7 @@
 #include "Heap.h"
 #include "../vmobjects/VMObjectBase.h"
 
-#include <vm/Universe.h>
+#include "../vm/Universe.h"
 
 #ifdef UNITTESTS
 struct VMObjectCompare {

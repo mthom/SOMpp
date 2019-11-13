@@ -33,7 +33,7 @@
 #include "AbstractObject.h"
 
 #include <misc/defs.h>
-#include <vm/Universe.h>
+#include "../vm/Universe.h"
 
 #include "ObjectFormats.h"
 #include "../aot/SOMObjectVisitor.hpp"

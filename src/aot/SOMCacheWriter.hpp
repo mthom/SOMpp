@@ -66,7 +66,7 @@ public:
     }
 
     void flushToMetadataArea(const VMClass* clazz) {
-        cache->copyMetadata(clazz->GetName()->GetChars(), contents.data(), contents.size());
+      cache->copyMetadata(clazz->GetName(), contents.data(), contents.size());
     }
 
 private:

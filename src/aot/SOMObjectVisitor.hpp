@@ -2,7 +2,7 @@
 
 #include <set>
 
-#include "ObjectFormats.h"
+#include "../vmobjects/ObjectFormats.h"
 #include "BufferWriter.hpp"
 
 #include "../misc/defs.h"
