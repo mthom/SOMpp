@@ -41,8 +41,11 @@ docker run --rm -it omr/sompp:latest /bin/bash
 The SOM++ code can be found at:
 /home/omr/SOMpp
 
-SOM++ can be built with Make:
+SOM++ can be built with CMake:
 
+    $ mkdir cmake_build
+    $ cd cmake_build/
+    $ cmake -DCMAKE_BUILD_TYPE=Debug ..
     $ make
 
 Afterwards, the tests can be executed with:
@@ -96,3 +99,13 @@ The current build status is: [![Build Status](https://travis-ci.org/SOM-st/SOMpp
  [SOM]: http://www.hpi.uni-potsdam.de/hirschfeld/projects/som/
  [SOMst]: https://travis-ci.org/SOM-st/
 
+Status of AOT/JIT Compilation
+-----------------------------
+
+This fork is an extension of Charlie Gracie's 2016 fork, which added a JIT
+compiler written using [Eclipse OMR](https://github.com/eclipse/omr)'s JitBuilder
+technology. It uses the JIT compiler to compile SOM++ code ahead-of-time, which it
+persists and stores to a customized shared cache, derived from OpenJ9's shared
+class cache. Subsequent runs of SOM++ load compiled code from the cache, when available.
+Currently, the JIT compiler does not interoperate with the AOT compiler.
+In the future, this may change.
