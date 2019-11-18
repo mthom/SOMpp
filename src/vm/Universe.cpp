@@ -66,6 +66,7 @@
 #include "../../omr/include_core/omrlinkedlist.h"
 #include "../../omr/compiler/env/CompilerEnv.hpp"
 #include "../../omrglue/MarkingDelegate.hpp"
+#include "SOMCacheStats.hpp"
 #endif
 
 #include <memory>
@@ -195,7 +196,6 @@ vector<StdString> Universe::handleArguments(long argc, char** argv) {
 #endif
 
     for (long i = 1; i < argc; ++i) {
-
         if (strncmp(argv[i], "-cp", 3) == 0) {
             if ((argc == i + 1) || classPath.size() > 0)
                 printUsageAndExit(argv[0]);
@@ -224,7 +224,21 @@ vector<StdString> Universe::handleArguments(long argc, char** argv) {
         	enableJIT = true;
         } else if (strncmp(argv[i], "-int", 4) == 0) {
         	enableJIT = false;
-        }
+        } else if (strcmp(argv[1], "--cache-stats") == 0) {
+	        std::optional<SOMOSCacheInfo> cacheInfo = TR::SharedCache::getCacheStats();
+
+		if (cacheInfo) {
+		   std::cout << "Cache size: " << cacheInfo.value()._cacheSize << "\n";
+		   std::cout << "Is persistent: " << cacheInfo.value()._isPersistent << "\n";
+		   std::cout << "Prelude section size: " << cacheInfo.value()._preludeSectionSize << "\n";
+		   std::cout << "Data section size: " << cacheInfo.value()._dataSectionSize << "\n";
+		   std::cout << "Metadata section size: " << cacheInfo.value()._metadataSectionSize << "\n";
+		   std::cout << "Last Assumption ID: " << cacheInfo.value()._lastAssumptionID << "\n";
+		   std::cout << "VM ID: " << cacheInfo.value()._vmID << "\n";
+		}
+
+		Quit(ERR_SUCCESS);
+	}
 #endif
         else {
             vector<StdString> extPathTokens = vector<StdString>(2);
@@ -554,30 +568,32 @@ void Universe::initialize(long _argc, char** _argv) {
     Heap<HEAP_CLS>::InitializeHeap(heapSize);
 
 #if GC_TYPE == OMR_GARBAGE_COLLECTION
-    SOM_VM *vm = GetHeap<OMRHeap>()->getVM();
-    SOM_Thread *thread = GetHeap<OMRHeap>()->getThread();
+    if (GetHeap<OMRHeap>()) {
+      SOM_VM *vm = GetHeap<OMRHeap>()->getVM();
+      SOM_Thread *thread = GetHeap<OMRHeap>()->getThread();
 
-    if (OMR_ERROR_NONE != OMR_Initialize_VM(&vm->omrVM, &thread->omrVMThread, vm, thread)) {
-        Universe::ErrorPrint("Failed startup OMR\n");
-        GetUniverse()->Quit(-1);
-    }
+      if (OMR_ERROR_NONE != OMR_Initialize_VM(&vm->omrVM, &thread->omrVMThread, vm, thread)) {
+         Universe::ErrorPrint("Failed startup OMR\n");
+	 GetUniverse()->Quit(-1);
+      }
 
-    if (OMR_ERROR_NONE != omrthread_rwmutex_init(&vm->_vmAccessMutex, 0, "SOM_VM rwmutex")) {
-        Universe::ErrorPrint("Failed startup OMR\n");
-        GetUniverse()->Quit(-1);
-    }
+      if (OMR_ERROR_NONE != omrthread_rwmutex_init(&vm->_vmAccessMutex, 0, "SOM_VM rwmutex")) {
+         Universe::ErrorPrint("Failed startup OMR\n");
+	 GetUniverse()->Quit(-1);
+      }
 
-    if (enableJIT) {
-    	enableJIT = initializeJit();
-        if (!enableJIT) {
-    	    Universe::ErrorPrint("Could not initialize JIT\n");
-            GetUniverse()->Quit(-1);
-       } else {
-    	   if (0 != createJITAsyncCompileThread(vm)) {
-    		   Universe::ErrorPrint("Could not initialize JIT thread\n");
-    		   GetUniverse()->Quit(-1);
-    	   }
-       }
+      if (enableJIT) {
+    	 enableJIT = initializeJit();
+	 if (!enableJIT) {
+	    Universe::ErrorPrint("Could not initialize JIT\n");
+	    GetUniverse()->Quit(-1);
+	 } else {
+    	    if (0 != createJITAsyncCompileThread(vm)) {
+	       Universe::ErrorPrint("Could not initialize JIT thread\n");
+	       GetUniverse()->Quit(-1);
+	    }
+	 }
+      }
     }
 #endif
 
@@ -637,17 +653,22 @@ Universe::~Universe() {
         delete (interpreter);
 
 #if GC_TYPE == OMR_GARBAGE_COLLECTION
-    SOM_VM *vm = GetHeap<OMRHeap>()->getVM();
-    if (enableJIT) {
-        shutdownJITAsyncCompileThread(vm);
-        shutdownJit();
+    if (GetHeap<OMRHeap>()) {
+      SOM_VM *vm = GetHeap<OMRHeap>()->getVM();
+      
+      if (enableJIT) {
+         shutdownJITAsyncCompileThread(vm);
+	 shutdownJit();
+      }
+      
+      SOM_Thread *thread = GetHeap<OMRHeap>()->getThread();
+      omr_error_t rc = OMR_Shutdown_VM(vm->omrVM, thread->omrVMThread);
+      
+      if (OMR_ERROR_NONE != rc) {
+    	 Universe::ErrorPrint("Error shutting down OMR\n");
+      }
     }
-    SOM_Thread *thread = GetHeap<OMRHeap>()->getThread();
-    omr_error_t rc = OMR_Shutdown_VM(vm->omrVM, thread->omrVMThread);
-    if (OMR_ERROR_NONE != rc) {
-    	Universe::ErrorPrint("Error shutting down OMR\n");
-    }
-
+    
 #endif
     // check done inside
     Heap<HEAP_CLS>::DestroyHeap();
