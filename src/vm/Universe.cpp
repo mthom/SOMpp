@@ -1041,6 +1041,7 @@ VMObject* Universe::InitializeFromCache()
     enqueueAOTMethods(load_ptr(systemClass));
 
     it = cache->constructMetadataSectionEntryIterator();
+    it.resetFocus();
 
     ProcessLoadedClasses(deserialize, it);
     compileAOTMethods();
